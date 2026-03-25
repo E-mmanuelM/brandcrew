@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* FONT_IMPORT */
+/* THEME_VARIABLES */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 1080px;
+  height: 1350px;
+  background: var(--bg-cream);
+  font-family: var(--font-body);
+  padding: 50px 55px;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-label {
+  font-size: 14px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--sage);
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 48px;
+  color: var(--text-on-light);
+  line-height: 1.12;
+  margin-bottom: 30px;
+}
+
+.steps-card {
+  background: var(--forest);
+  border-radius: var(--card-radius);
+  padding: 40px 44px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+
+.step {
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+  padding: 22px 0;
+}
+
+.step-num-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 3px solid var(--sage);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 26px;
+  color: var(--sage);
+}
+
+.step-content { flex: 1; }
+.step-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--text-on-dark);
+  margin-bottom: 8px;
+}
+.step-desc {
+  font-size: 18px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(107,184,154,0.15);
+}
+</style>
+</head>
+<body>
+<div class="header-label">{{label}}</div>
+<div class="headline">{{headline}}</div>
+<div class="steps-card">
+  <!-- REPEAT:steps -->
+  <div class="step">
+    <div class="step-num-ring"><div class="step-num">{{index}}</div></div>
+    <div class="step-content">
+      <div class="step-title">{{title}}</div>
+      <div class="step-desc">{{description}}</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <!-- END:steps -->
+</div>
+</body>
+</html>

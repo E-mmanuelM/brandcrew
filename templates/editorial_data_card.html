@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* FONT_IMPORT */
+/* THEME_VARIABLES */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 1080px;
+  height: 1350px;
+  background: var(--bg-cream);
+  font-family: var(--font-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  width: 940px;
+  background: var(--forest);
+  border-radius: var(--card-radius);
+  padding: 60px 55px 50px;
+  color: var(--text-on-dark);
+}
+
+.label {
+  font-size: 16px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--sage);
+  margin-bottom: 24px;
+  font-weight: 700;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 56px;
+  line-height: 1.1;
+  margin-bottom: 42px;
+}
+.headline .accent {
+  color: var(--accent-lilac);
+}
+
+.stat-row {
+  display: flex;
+  gap: 22px;
+  margin-bottom: 36px;
+}
+.stat-box {
+  flex: 1;
+  background: var(--forest-deep);
+  border-radius: var(--inner-radius);
+  padding: 36px 28px;
+  text-align: center;
+}
+.stat-number {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 80px;
+  color: var(--sage);
+  line-height: 1;
+}
+.stat-context {
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.insight-bar {
+  background: var(--forest-deep);
+  border-radius: var(--inner-radius);
+  padding: 30px 34px;
+  font-size: 21px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.insight-bar strong {
+  color: var(--text-on-dark);
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="label">{{label}}</div>
+  <div class="headline">{{headline}}</div>
+  <div class="stat-row">
+    <!-- REPEAT:stats -->
+    <div class="stat-box">
+      <div class="stat-number">{{number}}</div>
+      <div class="stat-context">{{context}}</div>
+    </div>
+    <!-- END:stats -->
+  </div>
+  <div class="insight-bar">{{insight}}</div>
+</div>
+</body>
+</html>

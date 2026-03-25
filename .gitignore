@@ -1,0 +1,33 @@
+# Environment variables (NEVER commit)
+.env
+.env.local
+.env.production
+
+# MCP config (contains API keys)
+.mcp.json
+.mcp.json.save
+
+# Generated content
+outputs/
+generated_images/
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/

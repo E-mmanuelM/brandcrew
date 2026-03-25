@@ -1,0 +1,21 @@
+{
+  "name": "Midnight Editorial",
+  "description": "Dark navy with warm gold accents. Modern serif headlines. Premium feel for finance, consulting, or executive audiences.",
+  "font_import": "@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');",
+  "css_variables": {
+    "--bg-cream": "#F5F0E8",
+    "--forest": "#1B2A4A",
+    "--forest-deep": "#0F1D35",
+    "--sage": "#C4A055",
+    "--accent-lilac": "#7BA3C9",
+    "--accent-coral": "#C97B5B",
+    "--text-on-dark": "#EDE6D8",
+    "--text-on-light": "#1A1A2E",
+    "--text-muted": "#8A96A8",
+    "--bad-bg": "#3D2A2A",
+    "--card-radius": "20px",
+    "--inner-radius": "12px",
+    "--font-display": "'Libre Baskerville', Georgia, serif",
+    "--font-body": "'Inter', -apple-system, sans-serif"
+  }
+}

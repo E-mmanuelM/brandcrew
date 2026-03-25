@@ -1,0 +1,21 @@
+{
+  "name": "BrandCrew — Default",
+  "description": "Editorial magazine look. Forest green, sage, cream. Bold italic serif headlines. Works for any niche.",
+  "font_import": "@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=DM+Sans:wght@400;500;700&display=swap');",
+  "css_variables": {
+    "--bg-cream": "#F0EBE0",
+    "--forest": "#2D4A3A",
+    "--forest-deep": "#1E3A2C",
+    "--sage": "#6BB89A",
+    "--accent-lilac": "#C9A8D4",
+    "--accent-coral": "#D4836B",
+    "--text-on-dark": "#EDE6D8",
+    "--text-on-light": "#1E2E1E",
+    "--text-muted": "#8FA89A",
+    "--bad-bg": "#3D2A2A",
+    "--card-radius": "24px",
+    "--inner-radius": "16px",
+    "--font-display": "'Playfair Display', Georgia, serif",
+    "--font-body": "'DM Sans', -apple-system, sans-serif"
+  }
+}

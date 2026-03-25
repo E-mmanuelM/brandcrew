@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* FONT_IMPORT */
+/* THEME_VARIABLES */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 1080px;
+  height: 1350px;
+  background: var(--bg-cream);
+  font-family: var(--font-body);
+  padding: 45px 50px;
+  display: flex;
+  flex-direction: column;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 46px;
+  color: var(--text-on-light);
+  text-align: center;
+  line-height: 1.12;
+  margin-bottom: 30px;
+}
+
+.split {
+  flex: 1;
+  display: flex;
+  gap: 20px;
+}
+
+.side {
+  flex: 1;
+  border-radius: var(--card-radius);
+  padding: 38px 34px 34px;
+  display: flex;
+  flex-direction: column;
+}
+.side.bad { background: var(--bad-bg); color: var(--text-on-dark); }
+.side.good { background: var(--forest); color: var(--text-on-dark); }
+
+.side-verdict {
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+.side.bad .side-verdict { color: var(--accent-coral); }
+.side.good .side-verdict { color: var(--sage); }
+
+.side-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  margin-bottom: 28px;
+  line-height: 1.2;
+}
+
+.side-items {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+.side-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 19px;
+  line-height: 1.4;
+}
+.side-item .icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-weight: 700;
+}
+.side.bad .icon { color: var(--accent-coral); }
+.side.good .icon { color: var(--sage); }
+
+.side-stat {
+  margin-top: auto;
+  padding-top: 26px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  text-align: center;
+}
+.side-stat .num {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 56px;
+}
+.side.bad .num { color: var(--accent-coral); }
+.side.good .num { color: var(--sage); }
+.side-stat .ctx {
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+</style>
+</head>
+<body>
+<div class="headline">{{headline}}</div>
+<div class="split">
+  <div class="side bad">
+    <div class="side-verdict">{{bad_verdict}}</div>
+    <div class="side-title">{{bad_title}}</div>
+    <div class="side-items">
+      <!-- REPEAT:bad_items -->
+      <div class="side-item"><span class="icon">✕</span> {{item}}</div>
+      <!-- END:bad_items -->
+    </div>
+    <div class="side-stat">
+      <div class="num">{{bad_stat}}</div>
+      <div class="ctx">{{bad_stat_context}}</div>
+    </div>
+  </div>
+  <div class="side good">
+    <div class="side-verdict">{{good_verdict}}</div>
+    <div class="side-title">{{good_title}}</div>
+    <div class="side-items">
+      <!-- REPEAT:good_items -->
+      <div class="side-item"><span class="icon">✓</span> {{item}}</div>
+      <!-- END:good_items -->
+    </div>
+    <div class="side-stat">
+      <div class="num">{{good_stat}}</div>
+      <div class="ctx">{{good_stat_context}}</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+{
+  "editorial_data_card": {
+    "label": "SaaS Growth Insight",
+    "headline": "Your Onboarding Costs <span class='accent'>3\u00d7 More</span> Than Your Acquisition",
+    "stats": [
+      {"number": "$312", "context": "Avg cost to onboard one user"},
+      {"number": "$97", "context": "With automated activation flow"}
+    ],
+    "insight": "<strong>Every manual onboarding step is revenue leaking out.</strong> Most SaaS teams spend 40%+ of their support budget on activation issues that should be self-serve."
+  },
+  "transformation": {
+    "headline": "What Changed When We Stopped Guessing at Churn",
+    "before_verdict": "The Old Way",
+    "before_title": "Quarterly Reviews & Gut Feel",
+    "before_items": [
+      "Monthly churn reports nobody reads",
+      "8.2% monthly churn rate",
+      "CS team reacts after cancellation",
+      "$340K ARR lost before anyone noticed"
+    ],
+    "after_verdict": "The Better Way",
+    "after_title": "Predictive Health Scoring",
+    "after_items": [
+      "Real-time usage drop alerts",
+      "2.1% monthly churn \u2014 industry-leading",
+      "CS reaches out 14 days before risk",
+      "$890K ARR saved in 6 months"
+    ]
+  },
+  "magazine_infographic": {
+    "label": "Framework",
+    "headline": "The 4-Step Pricing Audit Nobody Does",
+    "steps": [
+      {"title": "Usage Data Pull", "description": "Export feature usage by plan tier. Find which features paid users actually use vs. which ones they're paying for but ignoring."},
+      {"title": "Willingness-to-Pay Survey", "description": "Ask 50 customers what they'd pay for each feature independently. The gaps between perceived and actual value reveal your mispricing."},
+      {"title": "Competitor Plan Mapping", "description": "Map every competitor's pricing page. Not to copy \u2014 to find what they bundle that you give away free."},
+      {"title": "Revenue Impact Model", "description": "Model three scenarios: price increase, new tier, feature unbundling. Pick the one that grows revenue without spiking churn."}
+    ]
+  },
+  "split_comparison": {
+    "headline": "Why 90% of SaaS Companies Plateau at $1M ARR",
+    "bad_verdict": "Why Most Plateau",
+    "bad_title": "Scale Everything at Once",
+    "bad_items": [
+      "Hire 5 sales reps before PMF is proven",
+      "Build features customers asked for once",
+      "Spend 60% of budget on paid acquisition",
+      "Measure MRR but ignore activation rate",
+      "12-month sales cycles with no self-serve"
+    ],
+    "bad_stat": "73%",
+    "bad_stat_context": "Never reach $5M ARR",
+    "good_verdict": "Why 10% Break Through",
+    "good_title": "Fix Activation First",
+    "good_items": [
+      "Obsess over time-to-value for new signups",
+      "Build the feature that makes users stay",
+      "Invest in product-led growth loops",
+      "Track activation rate as the #1 metric",
+      "Self-serve path that converts without sales"
+    ],
+    "good_stat": "4.2\u00d7",
+    "good_stat_context": "Faster path to $5M ARR"
+  },
+  "bold_text_metaphor": {
+    "headline": "Your Pricing Page Is the <span class='accent'>Most Ignored</span> Growth Lever",
+    "caption": "Opinion \u00b7 SaaS Pricing",
+    "metaphor_html": "<span class='big'>1 pricing change</span>doubled revenue without adding a single customer",
+    "bottom_text": "B2B SaaS | Growth Strategy"
+  },
+  "quote_card": {
+    "quote": "The best SaaS teams don't sell harder. They <span class='accent'>activate faster</span> \u2014 then barely need to sell at all.",
+    "context": "After 10 years building B2B products, the single highest-ROI investment isn't acquisition. It's reducing time-to-value.",
+    "tags": ["SaaS Growth", "Hot Take", "PLG"]
+  }
+}

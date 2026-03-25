@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* FONT_IMPORT */
+/* THEME_VARIABLES */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 1080px;
+  height: 1350px;
+  background: var(--bg-cream);
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 65px;
+}
+
+.caption-top {
+  font-size: 15px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--sage);
+  font-weight: 700;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 74px;
+  color: var(--text-on-light);
+  text-align: center;
+  line-height: 1.08;
+  margin-bottom: 50px;
+  max-width: 920px;
+}
+.headline .accent {
+  color: var(--accent-lilac);
+}
+
+.metaphor-scene {
+  width: 850px;
+  background: var(--forest);
+  border-radius: var(--card-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 55px 50px;
+}
+
+.metaphor-content {
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--text-on-dark);
+  text-align: center;
+  line-height: 1.35;
+}
+.metaphor-content .big {
+  font-size: 88px;
+  font-weight: 900;
+  color: var(--sage);
+  display: block;
+  margin-bottom: 16px;
+  line-height: 1;
+}
+
+.caption-bottom {
+  font-size: 16px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-on-light);
+  opacity: 0.3;
+  font-weight: 500;
+  margin-top: 45px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="caption-top">{{caption}}</div>
+<div class="headline">{{headline}}</div>
+<div class="metaphor-scene">
+  <div class="metaphor-content">{{metaphor_html}}</div>
+</div>
+<div class="caption-bottom">{{bottom_text}}</div>
+</body>
+</html>
