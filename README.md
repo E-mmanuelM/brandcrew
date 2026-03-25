@@ -111,21 +111,3 @@ BrandCrew is configured for a specific niche through a few files:
 
 Swap these files and the entire system adapts to a different B2B industry.
 
----
-
-## Status
-
-- [x] 7 full-time agents built and running
-- [x] Telegram bot with 12 commands
-- [x] Template-based design system (zero API cost)
-- [x] Self-improving feedback loops
-- [x] Multi-select idea approval flow
-- [ ] Voice profile definition (critical next step)
-- [ ] First live content cycle
-- [ ] Analytics integration
-
----
-
-## License
-
-Open source. Built in public.
