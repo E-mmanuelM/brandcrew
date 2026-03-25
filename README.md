@@ -5,6 +5,9 @@
 BrandCrew is an open-source multi-agent system that runs your entire LinkedIn content pipeline — from niche research to post design — with AI agents you direct through Telegram. Every week, the agents research, strategize, write, score, design, and deliver. Every cycle, they get smarter from your feedback.
 
 No orchestrator. No dashboard to babysit. You talk to your crew on Telegram. They do the work.
+---
+
+## [→ Explore the Live Dashboard](https://e-mmanuelm.github.io/brandcrew/dashboard/)
 
 ---
 
