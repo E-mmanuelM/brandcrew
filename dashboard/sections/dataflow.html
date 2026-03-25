@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — Data Flow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --fg: #1A1A1A;
+    --fg-secondary: #6B6560;
+    --fg-dim: #A09A93;
+    --accent-green: #5CBF3A;
+    --accent-red: #C44B28;
+    --border: #D6D1C8;
+    --dark-bg: #141414;
+    --dark-bg-alt: #1C1C1C;
+    --dark-border: #2A2A2A;
+    --dark-border-light: #333333;
+    --dark-fg: #E8E3D8;
+    --dark-fg-dim: #6B6560;
+    --dark-accent: #5CBF3A;
+    --dark-grid: rgba(255,255,255,0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ──────────────────────────────────────── */
+  .nav {
+    position: fixed; top: 0; left: 0; width: 100%;
+    padding: 12px 32px; display: flex; justify-content: space-between; align-items: center;
+    z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border);
+  }
+  .nav-brand { font-size: 10px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; }
+  .nav-tabs { display: flex; gap: 0; }
+  .nav-tab {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 400;
+    letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px;
+    border: 1px solid var(--border); border-right: none;
+    background: transparent; color: var(--fg-dim); cursor: pointer; transition: all 0.2s ease;
+  }
+  .nav-tab:last-child { border-right: 1px solid var(--border); }
+  .nav-tab:hover { color: var(--fg); background: var(--bg-alt); }
+  .nav-tab.active { background: var(--fg); color: var(--bg); }
+  .nav-version { font-size: 9px; font-weight: 300; color: var(--fg-dim); letter-spacing: 1.5px; }
+
+  /* ── HERO (light) ────────────────────────────── */
+  .hero { margin-top: 52px; padding: 48px 60px 32px; }
+  .hero-label {
+    font-size: 9px; font-weight: 500; letter-spacing: 4px;
+    text-transform: uppercase; color: var(--fg-dim); margin-bottom: 16px;
+  }
+  .hero-title { font-size: 28px; font-weight: 300; letter-spacing: -0.5px; line-height: 1.3; margin-bottom: 12px; }
+  .hero-title strong { font-weight: 600; }
+  .hero-desc {
+    font-size: 11px; font-weight: 300; line-height: 1.8;
+    color: var(--fg-secondary); max-width: 620px;
+  }
+
+  /* ── DARK HUD PANEL ──────────────────────────── */
+  .hud-panel {
+    margin: 32px 40px 60px;
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    position: relative;
+    overflow: hidden;
+    min-height: 700px;
+  }
+
+  /* HUD header bar */
+  .hud-header {
+    position: relative;
+    z-index: 2;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--dark-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .hud-title {
+    font-size: 9px; font-weight: 500; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--dark-fg-dim);
+  }
+
+  .hud-readout {
+    display: flex; gap: 24px;
+  }
+
+  .hud-readout-item {
+    font-size: 9px; font-weight: 400; letter-spacing: 1.5px; color: var(--dark-fg-dim);
+  }
+
+  .hud-readout-item span {
+    color: var(--dark-fg); font-weight: 500;
+  }
+
+  .hud-readout-item .live {
+    color: var(--dark-accent);
+  }
+
+  /* ── CANVAS for flow animation ───────────────── */
+  #flowCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ── TABLE BLOCKS ────────────────────────────── */
+  .hud-content {
+    position: relative;
+    z-index: 2;
+    padding: 32px 24px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .table-block {
+    border: 1px solid var(--dark-border-light);
+    background: rgba(20,20,20,0.8);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    cursor: default;
+  }
+
+  .table-block:hover {
+    border-color: var(--dark-accent);
+    box-shadow: 0 0 20px rgba(92,191,58,0.08);
+  }
+
+  .table-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--dark-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .table-name {
+    font-size: 11px; font-weight: 500; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--dark-fg);
+  }
+
+  .table-rows {
+    font-size: 9px; font-weight: 400; color: var(--dark-fg-dim); letter-spacing: 1px;
+  }
+
+  .table-body { padding: 0; }
+
+  .table-column {
+    padding: 8px 18px;
+    border-bottom: 1px solid var(--dark-border);
+    display: grid;
+    grid-template-columns: 140px 100px 1fr;
+    gap: 12px;
+    font-size: 10px;
+    transition: background 0.2s ease;
+  }
+
+  .table-column:last-child { border-bottom: none; }
+
+  .table-column:hover {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .col-name { color: var(--dark-fg); font-weight: 400; }
+  .col-type { color: var(--dark-fg-dim); font-weight: 300; }
+  .col-note { color: var(--dark-fg-dim); font-weight: 300; font-style: italic; }
+
+  .table-footer {
+    padding: 10px 18px;
+    border-top: 1px solid var(--dark-border);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .table-agent-tag {
+    font-size: 8px; font-weight: 500; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 2px 8px;
+    border: 1px solid var(--dark-border-light); color: var(--dark-fg-dim);
+    transition: all 0.2s ease;
+  }
+
+  .table-agent-tag.write {
+    border-color: var(--dark-accent); color: var(--dark-accent);
+  }
+
+  .table-agent-tag.read {
+    border-color: var(--dark-fg-dim); color: var(--dark-fg-dim);
+  }
+
+  /* ── FLOW LEGEND ─────────────────────────────── */
+  .hud-legend {
+    position: relative;
+    z-index: 2;
+    padding: 16px 24px;
+    border-top: 1px solid var(--dark-border);
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .hud-legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 8px; font-weight: 400; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--dark-fg-dim);
+  }
+
+  .legend-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+
+  .legend-dot.green { background: var(--dark-accent); }
+  .legend-dot.white { background: var(--dark-fg); }
+  .legend-dot.dim { background: var(--dark-fg-dim); }
+
+  /* ── AGENT CONNECTIONS SECTION ────────────────── */
+  .connections-section {
+    position: relative;
+    z-index: 2;
+    padding: 24px;
+  }
+
+  .connections-title {
+    font-size: 9px; font-weight: 500; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--dark-fg-dim);
+    margin-bottom: 20px;
+  }
+
+  .connection-row {
+    display: grid;
+    grid-template-columns: 60px 120px 40px 160px 40px 160px;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--dark-border);
+    font-size: 10px;
+    transition: background 0.2s ease;
+  }
+
+  .connection-row:hover { background: rgba(255,255,255,0.02); }
+  .connection-row:last-child { border-bottom: none; }
+
+  .conn-mark { width: 32px; height: 32px; }
+  .conn-mark svg { width: 32px; height: 32px; }
+
+  .conn-agent { color: var(--dark-fg); font-weight: 400; letter-spacing: 0.5px; }
+  .conn-arrow { color: var(--dark-fg-dim); text-align: center; font-size: 12px; }
+  .conn-arrow.write { color: var(--dark-accent); }
+  .conn-table { color: var(--dark-fg-dim); font-weight: 300; }
+
+  /* ── STATS BAR ───────────────────────────────── */
+  .stats-bar {
+    position: relative;
+    z-index: 2;
+    padding: 20px 24px;
+    border-top: 1px solid var(--dark-border);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+  }
+
+  .stat-cell {
+    padding: 16px;
+    border-right: 1px solid var(--dark-border);
+    text-align: center;
+  }
+
+  .stat-cell:last-child { border-right: none; }
+
+  .stat-value {
+    font-size: 24px; font-weight: 600; color: var(--dark-fg);
+    letter-spacing: -1px;
+  }
+
+  .stat-label {
+    font-size: 8px; font-weight: 400; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--dark-fg-dim); margin-top: 4px;
+  }
+
+  /* ── FOOTER ──────────────────────────────────── */
+  .footer {
+    padding: 32px 60px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between;
+  }
+  .footer-text {
+    font-size: 9px; font-weight: 300; color: var(--fg-dim);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+
+<!-- HERO (light) -->
+<section class="hero">
+  <div class="hero-label">System / Data Flow</div>
+  <h1 class="hero-title"><strong>Database Schema</strong></h1>
+  <p class="hero-desc">
+    Five tables hold the operational state of the entire pipeline. Every agent reads from and writes to this shared database. The tables are the source of truth — not files, not chat, not memory.
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DARK HUD PANEL                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="hud-panel">
+
+  <canvas id="flowCanvas"></canvas>
+
+  <!-- HUD Header -->
+  <div class="hud-header">
+    <div class="hud-title">DATA_TABLES</div>
+    <div class="hud-readout">
+      <div class="hud-readout-item">TABLES: <span>5</span></div>
+      <div class="hud-readout-item">STATUS: <span class="live">● LIVE</span></div>
+      <div class="hud-readout-item">WRITES/WEEK: <span>~50</span></div>
+      <div class="hud-readout-item">READS/WEEK: <span>~140</span></div>
+    </div>
+  </div>
+
+  <!-- Table Schemas -->
+  <div class="hud-content">
+
+    <!-- research_topics -->
+    <div class="table-block" id="tb-research">
+      <div class="table-header">
+        <span class="table-name">research_topics</span>
+        <span class="table-rows">~10 rows/week</span>
+      </div>
+      <div class="table-body">
+        <div class="table-column"><span class="col-name">id</span><span class="col-type">UUID</span><span class="col-note">primary key</span></div>
+        <div class="table-column"><span class="col-name">topic</span><span class="col-type">TEXT</span><span class="col-note">trending topic title</span></div>
+        <div class="table-column"><span class="col-name">source_url</span><span class="col-type">TEXT</span><span class="col-note">where it was found</span></div>
+        <div class="table-column"><span class="col-name">relevance_score</span><span class="col-type">INTEGER</span><span class="col-note">0-100 ranking</span></div>
+        <div class="table-column"><span class="col-name">used</span><span class="col-type">BOOLEAN</span><span class="col-note">prevents repeat use</span></div>
+        <div class="table-column"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span><span class="col-note">auto</span></div>
+      </div>
+      <div class="table-footer">
+        <span class="table-agent-tag write">FT.01 WRITES</span>
+        <span class="table-agent-tag read">FT.02 READS</span>
+        <span class="table-agent-tag read">FT.03 READS</span>
+      </div>
+    </div>
+
+    <!-- content_ideas -->
+    <div class="table-block" id="tb-ideas">
+      <div class="table-header">
+        <span class="table-name">content_ideas</span>
+        <span class="table-rows">10 rows/week</span>
+      </div>
+      <div class="table-body">
+        <div class="table-column"><span class="col-name">id</span><span class="col-type">UUID</span><span class="col-note">primary key</span></div>
+        <div class="table-column"><span class="col-name">hook</span><span class="col-type">TEXT</span><span class="col-note">opening line</span></div>
+        <div class="table-column"><span class="col-name">angle_description</span><span class="col-type">TEXT</span><span class="col-note">what the post is about</span></div>
+        <div class="table-column"><span class="col-name">angle</span><span class="col-type">TEXT</span><span class="col-note">opinion / how-to / story</span></div>
+        <div class="table-column"><span class="col-name">suggested_format</span><span class="col-type">TEXT</span><span class="col-note">text / carousel / video</span></div>
+        <div class="table-column"><span class="col-name">research_topic_id</span><span class="col-type">UUID</span><span class="col-note">FK → research_topics</span></div>
+        <div class="table-column"><span class="col-name">status</span><span class="col-type">TEXT</span><span class="col-note">pending → approved / rejected</span></div>
+        <div class="table-column"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span><span class="col-note">auto</span></div>
+      </div>
+      <div class="table-footer">
+        <span class="table-agent-tag write">FT.03 WRITES</span>
+        <span class="table-agent-tag read">FT.04 READS</span>
+        <span class="table-agent-tag write">HU.01 UPDATES STATUS</span>
+      </div>
+    </div>
+
+    <!-- content_drafts -->
+    <div class="table-block" id="tb-drafts">
+      <div class="table-header">
+        <span class="table-name">content_drafts</span>
+        <span class="table-rows">1-3 rows/week</span>
+      </div>
+      <div class="table-body">
+        <div class="table-column"><span class="col-name">id</span><span class="col-type">UUID</span><span class="col-note">primary key</span></div>
+        <div class="table-column"><span class="col-name">draft_text</span><span class="col-type">TEXT</span><span class="col-note">full post content</span></div>
+        <div class="table-column"><span class="col-name">content_idea_id</span><span class="col-type">UUID</span><span class="col-note">FK → content_ideas</span></div>
+        <div class="table-column"><span class="col-name">quality_score</span><span class="col-type">INTEGER</span><span class="col-note">0-50 from editor</span></div>
+        <div class="table-column"><span class="col-name">edit_notes</span><span class="col-type">TEXT</span><span class="col-note">human feedback</span></div>
+        <div class="table-column"><span class="col-name">retry_count</span><span class="col-type">INTEGER</span><span class="col-note">max 2 before escalate</span></div>
+        <div class="table-column"><span class="col-name">template_key</span><span class="col-type">TEXT</span><span class="col-note">selected template type</span></div>
+        <div class="table-column"><span class="col-name">image_url</span><span class="col-type">TEXT</span><span class="col-note">path to generated design</span></div>
+        <div class="table-column"><span class="col-name">status</span><span class="col-type">TEXT</span><span class="col-note">draft → passed → approved</span></div>
+        <div class="table-column"><span class="col-name">created_at</span><span class="col-type">TIMESTAMP</span><span class="col-note">auto</span></div>
+      </div>
+      <div class="table-footer">
+        <span class="table-agent-tag write">FT.04 WRITES</span>
+        <span class="table-agent-tag write">FT.05 SCORES</span>
+        <span class="table-agent-tag write">FT.06 DESIGN</span>
+        <span class="table-agent-tag write">HU.01 APPROVES</span>
+        <span class="table-agent-tag read">FT.02 READS</span>
+      </div>
+    </div>
+
+    <!-- agent_logs -->
+    <div class="table-block" id="tb-logs">
+      <div class="table-header">
+        <span class="table-name">agent_logs</span>
+        <span class="table-rows">~35 rows/week</span>
+      </div>
+      <div class="table-body">
+        <div class="table-column"><span class="col-name">id</span><span class="col-type">UUID</span><span class="col-note">primary key</span></div>
+        <div class="table-column"><span class="col-name">agent_name</span><span class="col-type">TEXT</span><span class="col-note">which agent logged this</span></div>
+        <div class="table-column"><span class="col-name">action</span><span class="col-type">TEXT</span><span class="col-note">what action was taken</span></div>
+        <div class="table-column"><span class="col-name">status</span><span class="col-type">TEXT</span><span class="col-note">completed / failed / human_feedback</span></div>
+        <div class="table-column"><span class="col-name">input_data</span><span class="col-type">TEXT</span><span class="col-note">operator feedback text</span></div>
+        <div class="table-column"><span class="col-name">output_summary</span><span class="col-type">TEXT</span><span class="col-note">first 200 chars of output</span></div>
+        <div class="table-column"><span class="col-name">notes</span><span class="col-type">TEXT</span><span class="col-note">context and metadata</span></div>
+        <div class="table-column"><span class="col-name">started_at</span><span class="col-type">TIMESTAMP</span><span class="col-note">when agent started</span></div>
+        <div class="table-column"><span class="col-name">completed_at</span><span class="col-type">TIMESTAMP</span><span class="col-note">when agent finished</span></div>
+      </div>
+      <div class="table-footer">
+        <span class="table-agent-tag write">ALL AGENTS WRITE</span>
+        <span class="table-agent-tag read">FT.02 READS ALL</span>
+        <span class="table-agent-tag write">HU.01 FEEDBACK</span>
+      </div>
+    </div>
+
+    <!-- content_templates -->
+    <div class="table-block" id="tb-templates">
+      <div class="table-header">
+        <span class="table-name">content_templates</span>
+        <span class="table-rows">6 rows (static)</span>
+      </div>
+      <div class="table-body">
+        <div class="table-column"><span class="col-name">id</span><span class="col-type">UUID</span><span class="col-note">primary key</span></div>
+        <div class="table-column"><span class="col-name">template_name</span><span class="col-type">TEXT</span><span class="col-note">template identifier</span></div>
+        <div class="table-column"><span class="col-name">template_type</span><span class="col-type">TEXT</span><span class="col-note">quote / stat / list / story / cta / tips</span></div>
+        <div class="table-column"><span class="col-name">html_path</span><span class="col-type">TEXT</span><span class="col-note">path to HTML template file</span></div>
+        <div class="table-column"><span class="col-name">dimensions</span><span class="col-type">TEXT</span><span class="col-note">1080×1350 default</span></div>
+        <div class="table-column"><span class="col-name">active</span><span class="col-type">BOOLEAN</span><span class="col-note">enable/disable templates</span></div>
+      </div>
+      <div class="table-footer">
+        <span class="table-agent-tag read">FT.06 READS</span>
+        <span class="table-agent-tag write">HU.01 MANAGES</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-cell">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Tables</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value">39</div>
+      <div class="stat-label">Columns</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value">8</div>
+      <div class="stat-label">Agents Writing</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-value">3</div>
+      <div class="stat-label">FK Relations</div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="hud-legend">
+    <div class="hud-legend-item"><div class="legend-dot green"></div>Writes to table</div>
+    <div class="hud-legend-item"><div class="legend-dot dim"></div>Reads from table</div>
+    <div class="hud-legend-item"><div class="legend-dot white"></div>Flow particles</div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span class="footer-text">BrandCrew / Data Flow V.02</span>
+  <span class="footer-text">5 Tables / 39 Columns</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- FLOW ANIMATION                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<script>
+(function() {
+  const canvas = document.getElementById('flowCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const panel = canvas.parentElement;
+    canvas.width = panel.clientWidth;
+    canvas.height = panel.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles = [];
+  const particleCount = 150;
+
+  for (let i = 0; i < particleCount; i++) {
+    particles.push({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.001,
+      vy: 0.0005 + Math.random() * 0.001,
+      size: Math.random() * 1.5 + 0.5,
+      alpha: Math.random() * 0.4 + 0.1,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.5 + Math.random() * 1.5
+    });
+  }
+
+  const flows = [
+    { x1: 0.38, y1: 0.2, x2: 0.62, y2: 0.2 },
+    { x1: 0.62, y1: 0.32, x2: 0.38, y2: 0.42 },
+    { x1: 0.38, y1: 0.58, x2: 0.62, y2: 0.42 },
+    { x1: 0.25, y1: 0.32, x2: 0.62, y2: 0.58 },
+    { x1: 0.75, y1: 0.32, x2: 0.75, y2: 0.42 },
+    { x1: 0.5, y1: 0.72, x2: 0.38, y2: 0.55 },
+  ];
+
+  let time = 0;
+
+  function draw() {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    flows.forEach(f => {
+      const mx = (f.x1 + f.x2) / 2;
+      const my = (f.y1 + f.y2) / 2;
+      const cx = mx + (Math.random() - 0.5) * 0.01;
+      const cy = my + (Math.random() - 0.5) * 0.01;
+
+      ctx.beginPath();
+      ctx.moveTo(f.x1 * w, f.y1 * h);
+      ctx.quadraticCurveTo(cx * w, cy * h, f.x2 * w, f.y2 * h);
+      ctx.strokeStyle = 'rgba(92, 191, 58, 0.06)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    for (const p of particles) {
+      const flowIdx = Math.floor(p.phase / (Math.PI * 2) * flows.length) % flows.length;
+      const f = flows[flowIdx];
+
+      const t_param = ((time * p.speed * 0.02 + p.phase) % 1);
+      const px = f.x1 + (f.x2 - f.x1) * t_param;
+      const py = f.y1 + (f.y2 - f.y1) * t_param;
+
+      const wx = Math.sin(t_param * Math.PI * 4 + time * 0.5) * 0.01;
+      const wy = Math.cos(t_param * Math.PI * 3 + time * 0.3) * 0.008;
+
+      const drawX = (px + wx) * w;
+      const drawY = (py + wy) * h;
+
+      const edgeFade = Math.sin(t_param * Math.PI);
+
+      ctx.beginPath();
+      ctx.arc(drawX, drawY, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(92, 191, 58, ${p.alpha * edgeFade * 0.6})`;
+      ctx.fill();
+    }
+
+    for (let i = 0; i < 60; i++) {
+      const ax = (Math.sin(i * 7.3 + time * 0.1) * 0.5 + 0.5);
+      const ay = (Math.cos(i * 5.1 + time * 0.08) * 0.5 + 0.5);
+      const as = 0.5 + Math.sin(i + time * 0.3) * 0.3;
+      const aa = 0.03 + Math.sin(i * 3 + time * 0.5) * 0.02;
+
+      ctx.beginPath();
+      ctx.arc(ax * w, ay * h, as, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(232, 227, 216, ${aa})`;
+      ctx.fill();
+    }
+
+    time += 0.03;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — Pipeline Flow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --fg: #1A1A1A;
+    --fg-secondary: #6B6560;
+    --fg-dim: #A09A93;
+    --accent-green: #5CBF3A;
+    --accent-red: #C44B28;
+    --mark-stroke: #1A1A1A;
+    --connection: #C5BFB6;
+    --border: #D6D1C8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .hero { padding: 60px 60px 40px; }
+  .hero-label { font-size: 9px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: var(--fg-dim); margin-bottom: 16px; }
+  .hero-title { font-size: 28px; font-weight: 300; letter-spacing: -0.5px; line-height: 1.3; margin-bottom: 16px; }
+  .hero-title strong { font-weight: 600; }
+  .hero-desc { font-size: 11px; font-weight: 300; line-height: 1.8; color: var(--fg-secondary); max-width: 600px; }
+  .hero-meta { display: flex; gap: 32px; margin-top: 24px; }
+  .hero-meta-item { font-size: 9px; font-weight: 400; letter-spacing: 1.5px; color: var(--fg-dim); }
+  .hero-meta-item span { color: var(--fg); font-weight: 500; }
+
+  .controls { padding: 0 60px 40px; display: flex; gap: 12px; align-items: center; }
+  .btn { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; padding: 8px 18px; border: 1px solid var(--fg); background: transparent; color: var(--fg); cursor: pointer; transition: all 0.2s ease; }
+  .btn:hover { background: var(--fg); color: var(--bg); }
+  .btn.active { background: var(--fg); color: var(--bg); }
+  .btn-green { border-color: var(--accent-green); color: var(--accent-green); }
+  .btn-green:hover, .btn-green.active { background: var(--accent-green); color: var(--bg); }
+  .step-counter { font-size: 10px; font-weight: 400; letter-spacing: 1px; color: var(--fg-dim); margin-left: 16px; }
+
+  .particle-strip { width: 100%; height: 60px; position: relative; overflow: hidden; margin-bottom: 40px; }
+  #particleCanvas { width: 100%; height: 100%; display: block; }
+
+  .timeline-section { padding: 0 60px 80px; position: relative; }
+  .timeline-track { position: relative; padding-left: 80px; }
+  .timeline-track::before { content: ''; position: absolute; left: 47px; top: 0; bottom: 0; width: 1px; background: var(--border); }
+
+  .step { position: relative; padding: 0 0 48px 0; opacity: 0.25; transition: opacity 0.5s ease, transform 0.5s ease; transform: translateY(4px); }
+  .step.active { opacity: 1; transform: translateY(0); }
+  .step.completed { opacity: 0.6; transform: translateY(0); }
+  .step.all-visible { opacity: 1; transform: translateY(0); }
+
+  .step-node { position: absolute; left: -80px; top: 4px; width: 48px; height: 48px; }
+  .step-node svg { width: 48px; height: 48px; transition: filter 0.3s ease; }
+  .step.active .step-node svg { filter: drop-shadow(0 0 8px rgba(92,191,58,0.4)); }
+
+  .step-dot { position: absolute; left: -33px; top: 20px; width: 10px; height: 10px; border-radius: 50%; background: var(--border); border: 2px solid var(--bg); z-index: 2; transition: background 0.3s ease, box-shadow 0.3s ease; }
+  .step.active .step-dot { background: var(--accent-green); box-shadow: 0 0 10px rgba(92,191,58,0.5); }
+  .step.completed .step-dot { background: var(--fg); }
+
+  .step-header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 8px; }
+  .step-code { font-size: 9px; font-weight: 500; letter-spacing: 2.5px; color: var(--fg-dim); min-width: 44px; }
+  .step-title { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; }
+  .step-time { font-size: 9px; font-weight: 400; letter-spacing: 1.5px; color: var(--fg-dim); margin-left: auto; }
+  .step-human-badge { font-size: 8px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-green); padding: 2px 8px; border: 1px solid var(--accent-green); margin-left: 8px; }
+
+  .step-desc { font-size: 10px; font-weight: 300; line-height: 1.7; color: var(--fg-secondary); max-width: 700px; margin-top: 8px; }
+  .step-detail { margin-top: 12px; display: flex; gap: 24px; flex-wrap: wrap; }
+  .step-detail-item { display: flex; flex-direction: column; gap: 4px; }
+  .step-detail-label { font-size: 8px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-dim); }
+  .step-detail-value { font-size: 10px; font-weight: 400; color: var(--fg); }
+
+  .step-io { margin-top: 12px; display: flex; gap: 40px; }
+  .step-io-group { display: flex; flex-direction: column; gap: 4px; }
+  .step-io-label { font-size: 8px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-dim); }
+  .step-io-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .step-tag { font-size: 9px; font-weight: 400; letter-spacing: 0.5px; padding: 2px 8px; border: 1px solid var(--border); }
+
+  .time-marker { position: relative; padding: 12px 0 20px 0; margin-left: -80px; }
+  .time-marker-text { font-size: 9px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); padding-left: 80px; }
+  .time-marker::before { content: ''; position: absolute; left: 43px; top: 18px; width: 9px; height: 1px; background: var(--fg-dim); }
+
+  .footer { padding: 32px 60px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+  .footer-text { font-size: 9px; font-weight: 300; color: var(--fg-dim); letter-spacing: 1.5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-label">System / Pipeline Flow</div>
+  <h1 class="hero-title"><strong>Weekly Pipeline</strong></h1>
+  <p class="hero-desc">
+    Every week, 7 agents and 1 human collaborate to produce polished LinkedIn posts with branded images. Sunday: research, strategy, idea selection. Mon-Fri: daily writing, scoring, approval, and image generation. Humans gate every critical decision.
+  </p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">STEPS: <span>9</span></div>
+    <div class="hero-meta-item">AGENTS: <span>7</span></div>
+    <div class="hero-meta-item">HUMAN GATES: <span>2</span></div>
+    <div class="hero-meta-item">CYCLE: <span>WEEKLY</span></div>
+  </div>
+</section>
+
+<div class="particle-strip"><canvas id="particleCanvas"></canvas></div>
+
+<div class="controls">
+  <button class="btn btn-green" id="btnPlay" onclick="togglePlay()">&#x25B6; Walk Through</button>
+  <button class="btn" onclick="showAll()">Show All</button>
+  <button class="btn" onclick="resetPipeline()">Reset</button>
+  <span class="step-counter" id="stepCounter"></span>
+</div>
+
+<section class="timeline-section">
+  <div class="timeline-track" id="timeline">
+
+    <div class="time-marker"><div class="time-marker-text">Sunday</div></div>
+
+    <div class="step" id="step-1" data-step="1">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="3" fill="#1A1A1A"/><circle cx="24" cy="24" r="10" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="18" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="24" y1="24" x2="24" y2="6" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">FT.01</span>
+        <span class="step-title">Niche Content Researcher</span>
+        <span class="step-time">Sunday</span>
+      </div>
+      <div class="step-desc">Scans your configured niche for what's trending this week. Saves 5-10 fresh topics to the database with relevance scores. Keywords and sources come from config/niche.md.</div>
+      <div class="step-io">
+        <div class="step-io-group"><div class="step-io-label">Reads</div><div class="step-io-tags"><span class="step-tag">Web sources</span><span class="step-tag">niche.md</span></div></div>
+        <div class="step-io-group"><div class="step-io-label">Writes</div><div class="step-io-tags"><span class="step-tag">research_topics</span></div></div>
+      </div>
+    </div>
+
+    <div class="step" id="step-2" data-step="2">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="5" fill="#1A1A1A"/><line x1="8" y1="10" x2="20" y2="21" stroke="#1A1A1A" stroke-width="1.5"/><line x1="40" y1="10" x2="28" y2="21" stroke="#1A1A1A" stroke-width="1.5"/><line x1="8" y1="38" x2="20" y2="27" stroke="#1A1A1A" stroke-width="1.5"/><line x1="40" y1="38" x2="28" y2="27" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="6" x2="24" y2="19" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="8" cy="10" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="10" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="8" cy="38" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="38" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="6" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">FT.02</span>
+        <span class="step-title">Marketing Director</span>
+        <span class="step-time">Sunday</span>
+      </div>
+      <div class="step-desc">Reads everything — fresh research, past draft scores, operator feedback, agent failures, image quality notes — and synthesizes it all into specific direction for this week. Updates performance-patterns.md which downstream agents read.</div>
+      <div class="step-io">
+        <div class="step-io-group"><div class="step-io-label">Reads</div><div class="step-io-tags"><span class="step-tag">research_topics</span><span class="step-tag">content_drafts</span><span class="step-tag">agent_logs</span><span class="step-tag">All feedback</span></div></div>
+        <div class="step-io-group"><div class="step-io-label">Writes</div><div class="step-io-tags"><span class="step-tag">performance-patterns.md</span><span class="step-tag">brand-guidelines.md</span></div></div>
+      </div>
+    </div>
+
+    <div class="step" id="step-3" data-step="3">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><circle cx="10" cy="24" r="3" fill="#1A1A1A"/><line x1="13" y1="24" x2="22" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="22" cy="24" r="2" fill="#1A1A1A"/><line x1="24" y1="23" x2="36" y2="10" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="24" x2="38" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="25" x2="36" y2="38" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="37" cy="10" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="39" cy="24" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="37" cy="38" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">FT.03</span>
+        <span class="step-title">Content Strategist</span>
+        <span class="step-time">Sunday</span>
+      </div>
+      <div class="step-desc">Generates 10 content ideas with relevance scores. Each derived from research topics and the Marketing Director's weekly direction. Sends all 10 to Telegram for multi-select.</div>
+      <div class="step-io">
+        <div class="step-io-group"><div class="step-io-label">Reads</div><div class="step-io-tags"><span class="step-tag">research_topics</span><span class="step-tag">performance-patterns.md</span><span class="step-tag">content-gaps.md</span></div></div>
+        <div class="step-io-group"><div class="step-io-label">Writes</div><div class="step-io-tags"><span class="step-tag">content_ideas &#xd7; 10</span><span class="step-tag">Telegram message</span></div></div>
+      </div>
+    </div>
+
+    <div class="time-marker"><div class="time-marker-text">Sunday Evening</div></div>
+
+    <div class="step" id="step-4" data-step="4">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" fill="#1A1A1A"/><circle cx="24" cy="24" r="16" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-dasharray="3 3"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">HU.01</span>
+        <span class="step-title">Select Ideas</span>
+        <span class="step-time">Sunday Evening</span>
+        <span class="step-human-badge">Human Gate</span>
+      </div>
+      <div class="step-desc">You review all 10 ideas on Telegram and multi-select your picks (e.g. "1,3,5,7,9"). Pick more from the same batch, reply MORE for a fresh batch, or DONE to lock the week. Approved count always comes from database.</div>
+      <div class="step-detail">
+        <div class="step-detail-item"><div class="step-detail-label">Input</div><div class="step-detail-value">10 ideas on Telegram</div></div>
+        <div class="step-detail-item"><div class="step-detail-label">Action</div><div class="step-detail-value">Multi-select + DONE</div></div>
+        <div class="step-detail-item"><div class="step-detail-label">Triggers</div><div class="step-detail-value">Week locked, writer queue ready</div></div>
+      </div>
+    </div>
+
+    <div class="time-marker"><div class="time-marker-text">Monday &#x2014; Friday</div></div>
+
+    <div class="step" id="step-5" data-step="5">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><line x1="12" y1="36" x2="36" y2="12" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="36" cy="12" r="3" fill="#1A1A1A"/><line x1="12" y1="36" x2="20" y2="36" stroke="#1A1A1A" stroke-width="1"/><line x1="12" y1="36" x2="12" y2="28" stroke="#1A1A1A" stroke-width="1"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">FT.04</span>
+        <span class="step-title">Content Creator</span>
+        <span class="step-time">Daily (Mon&#x2013;Fri)</span>
+      </div>
+      <div class="step-desc">Writes the post in your configured voice. Picks the oldest approved idea (FIFO queue). The idea is injected into the prompt to prevent drift. Loads voice profile, quality standards, and Marketing Director's weekly direction. Auto-chains to Editor on completion.</div>
+      <div class="step-io">
+        <div class="step-io-group"><div class="step-io-label">Reads</div><div class="step-io-tags"><span class="step-tag">Approved idea</span><span class="step-tag">voice.md</span><span class="step-tag">quality-standards.md</span><span class="step-tag">performance-patterns.md</span></div></div>
+        <div class="step-io-group"><div class="step-io-label">Writes</div><div class="step-io-tags"><span class="step-tag">content_drafts</span></div></div>
+      </div>
+    </div>
+
+    <div class="step" id="step-6" data-step="6">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><line x1="6" y1="24" x2="16" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><rect x="16" y="10" width="16" height="28" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="32" y1="24" x2="42" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="18" r="2" fill="#1A1A1A"/><line x1="22" y1="30" x2="26" y2="30" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">FT.05</span>
+        <span class="step-title">Content Editor</span>
+        <span class="step-time">Auto-chains</span>
+      </div>
+      <div class="step-desc">Scores the draft on 5 dimensions — voice match, usefulness, specificity, hook quality, and slop filter. Each scored 0-10. Pass threshold is 35/50. On pass, sends the full post text + score to Telegram for human approval. On fail, returns to Writer with specific feedback.</div>
+      <div class="step-io">
+        <div class="step-io-group"><div class="step-io-label">Reads</div><div class="step-io-tags"><span class="step-tag">content_drafts</span><span class="step-tag">quality-standards.md</span><span class="step-tag">voice.md</span></div></div>
+        <div class="step-io-group"><div class="step-io-label">Writes</div><div class="step-io-tags"><span class="step-tag">quality_score</span><span class="step-tag">Telegram message</span></div></div>
+      </div>
+    </div>
+
+    <div class="step" id="step-7" data-step="7">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" fill="#1A1A1A"/><circle cx="24" cy="24" r="16" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-dasharray="3 3"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">HU.01</span>
+        <span class="step-title">Approve Draft</span>
+        <span class="step-time">When Ready</span>
+        <span class="step-human-badge">Human Gate</span>
+      </div>
+      <div class="step-desc">You read the full post text on Telegram and decide: APPROVE to generate an image and queue for posting, REJECT to discard, or send free-text edit notes that trigger an immediate rewrite. This is the final quality check before visuals.</div>
+      <div class="step-detail">
+        <div class="step-detail-item"><div class="step-detail-label">Input</div><div class="step-detail-value">Full post text + score</div></div>
+        <div class="step-detail-item"><div class="step-detail-label">Actions</div><div class="step-detail-value">APPROVE / REJECT / Edit notes</div></div>
+        <div class="step-detail-item"><div class="step-detail-label">Triggers</div><div class="step-detail-value">FT.06 Social Media Designer</div></div>
+      </div>
+    </div>
+
+    <div class="step" id="step-8" data-step="8">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="14" y="14" width="20" height="20" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-dasharray="2 3"/><circle cx="24" cy="24" r="4" fill="#1A1A1A"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">FT.06</span>
+        <span class="step-title">Social Media Designer</span>
+        <span class="step-time">After Approve</span>
+      </div>
+      <div class="step-desc">Reads the approved draft, picks the best HTML template type, fills content variables, and renders a branded JPG image via Playwright at 1080&#xd7;1350. Six template types available. Zero API cost. Delivers the image to Telegram. Use /regenerate_image with feedback for iterations.</div>
+      <div class="step-io">
+        <div class="step-io-group"><div class="step-io-label">Reads</div><div class="step-io-tags"><span class="step-tag">Approved draft</span><span class="step-tag">brand-guidelines.md</span><span class="step-tag">templates/*.html</span><span class="step-tag">themes/default.json</span></div></div>
+        <div class="step-io-group"><div class="step-io-label">Writes</div><div class="step-io-tags"><span class="step-tag">template_name</span><span class="step-tag">image_url</span><span class="step-tag">Telegram photo</span></div></div>
+      </div>
+    </div>
+
+    <div class="step" id="step-9" data-step="9">
+      <div class="step-dot"></div>
+      <div class="step-node"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="#5CBF3A" stroke-width="1.5" fill="none"/><polyline points="16,24 22,30 34,18" stroke="#5CBF3A" stroke-width="2" fill="none"/></svg></div>
+      <div class="step-header">
+        <span class="step-code">DONE</span>
+        <span class="step-title">Ready for LinkedIn</span>
+        <span class="step-time">Manual Post</span>
+      </div>
+      <div class="step-desc">Post text and image are approved and finalized. Use /get_post on Telegram to grab both. Copy text, attach image, and post manually to LinkedIn. After posting, use /repurpose for X threads, Substack drafts, and TikTok slides.</div>
+      <div class="step-detail">
+        <div class="step-detail-item"><div class="step-detail-label">Retrieve</div><div class="step-detail-value">/get_post on Telegram</div></div>
+        <div class="step-detail-item"><div class="step-detail-label">Post to</div><div class="step-detail-value">LinkedIn (manual)</div></div>
+        <div class="step-detail-item"><div class="step-detail-label">Then</div><div class="step-detail-value">/repurpose for other platforms</div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="footer">
+  <span class="footer-text">BrandCrew / Pipeline Flow V.02</span>
+  <span class="footer-text">9 Steps / Sunday &#x2014; Friday</span>
+</div>
+
+<script>
+const steps = document.querySelectorAll('.step');
+const totalSteps = steps.length;
+let currentStep = 0;
+let playing = false;
+let playInterval = null;
+
+function updateView() {
+  steps.forEach((s, i) => {
+    s.classList.remove('active','completed','all-visible');
+    if (i < currentStep) s.classList.add('completed');
+    else if (i === currentStep) s.classList.add('active');
+  });
+  document.getElementById('stepCounter').textContent = `Step ${currentStep + 1} of ${totalSteps}`;
+  const activeEl = document.getElementById(`step-${currentStep + 1}`);
+  if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function togglePlay() {
+  const btn = document.getElementById('btnPlay');
+  if (playing) {
+    clearInterval(playInterval); playing = false;
+    btn.classList.remove('active'); btn.textContent = '\u25B6 Walk Through';
+  } else {
+    playing = true; btn.classList.add('active'); btn.textContent = '\u25A0 Pause';
+    currentStep = 0; updateView();
+    playInterval = setInterval(() => {
+      currentStep++;
+      if (currentStep >= totalSteps) {
+        clearInterval(playInterval); playing = false;
+        btn.classList.remove('active'); btn.textContent = '\u25B6 Walk Through';
+        currentStep = totalSteps - 1;
+      }
+      updateView();
+    }, 2500);
+  }
+}
+
+function showAll() {
+  if (playing) { clearInterval(playInterval); playing = false; document.getElementById('btnPlay').classList.remove('active'); document.getElementById('btnPlay').textContent = '\u25B6 Walk Through'; }
+  steps.forEach(s => { s.classList.remove('active','completed'); s.classList.add('all-visible'); });
+  document.getElementById('stepCounter').textContent = 'All steps visible';
+}
+
+function resetPipeline() {
+  if (playing) { clearInterval(playInterval); playing = false; document.getElementById('btnPlay').classList.remove('active'); document.getElementById('btnPlay').textContent = '\u25B6 Walk Through'; }
+  currentStep = 0;
+  steps.forEach(s => s.classList.remove('active','completed','all-visible'));
+  document.getElementById('stepCounter').textContent = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); if (currentStep < totalSteps - 1) { currentStep++; updateView(); } }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); if (currentStep > 0) { currentStep--; updateView(); } }
+  if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+});
+
+(function() {
+  const c = document.getElementById('particleCanvas');
+  const ctx = c.getContext('2d');
+  function resize() { c.width = c.parentElement.clientWidth; c.height = c.parentElement.clientHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const particles = [];
+  for (let i = 0; i < 300; i++) {
+    particles.push({ x: Math.random(), y: Math.random(), vx: (Math.random()-0.5)*0.0003, vy: (Math.random()-0.5)*0.0006, size: Math.random()*1.2+0.4, phase: Math.random()*Math.PI*2 });
+  }
+  let t = 0;
+  function draw() {
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h); ctx.fillStyle = '#E8E3D8'; ctx.fillRect(0,0,w,h);
+    for (const p of particles) {
+      const centerY = 0.5, dist = Math.abs(p.y - centerY), wave = Math.max(0, 1 - dist * 3);
+      p.x += p.vx + Math.sin(p.x*12+t*1.5+p.phase)*0.006*wave;
+      p.y += p.vy + Math.cos(p.x*8+t*0.8+p.phase)*0.003*wave;
+      if(wave>0.3) p.y += (centerY-p.y)*0.001;
+      if(p.x<0)p.x=1; if(p.x>1)p.x=0; if(p.y<0)p.y=1; if(p.y>1)p.y=0;
+      ctx.beginPath(); ctx.arc(p.x*w,p.y*h,p.size*(1+wave*1.5),0,Math.PI*2);
+      ctx.fillStyle = `rgba(26,26,26,${0.08+wave*0.4})`; ctx.fill();
+    }
+    t+=0.02; requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — Architecture Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --bg-panel: #FAF7F2;
+    --bg-map: #EDEAE2;
+    --fg: #1A1A1A;
+    --fg-secondary: #6B6560;
+    --fg-dim: #A09A93;
+    --accent-green: #5CBF3A;
+    --accent-red: #C44B28;
+    --mark-stroke: #1A1A1A;
+    --connection: #C5BFB6;
+    --connection-hover: #1A1A1A;
+    --border: #D6D1C8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .map-container {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    background: var(--bg-map);
+    overflow: hidden;
+  }
+
+  #bgCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  #mapSvg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  .conn-line {
+    stroke: var(--connection);
+    stroke-width: 1;
+    fill: none;
+    transition: stroke 0.3s ease, stroke-opacity 0.3s ease;
+  }
+
+  .conn-line.data-flow { stroke-dasharray: 4 4; }
+  .conn-line.dimmed { stroke-opacity: 0.15; }
+  .conn-line.highlighted { stroke: var(--connection-hover); stroke-width: 1.5; stroke-opacity: 1; }
+  .conn-line.highlighted.data-flow { stroke-dasharray: 6 3; }
+
+  .node-group { cursor: pointer; }
+  .node-group.dimmed { opacity: 0.2; }
+  .node-group .node-bg { fill: transparent; }
+  .node-group:hover .node-bg { fill: rgba(237,234,226,0.92); }
+
+  .node-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    font-weight: 500;
+    fill: var(--fg-dim);
+    letter-spacing: 2px;
+    text-anchor: middle;
+  }
+
+  .node-name-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 400;
+    fill: var(--fg);
+    text-anchor: middle;
+  }
+
+  .zone-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    fill: var(--fg-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .zone-rect { display: none; }
+
+  .panel-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(26,26,26,0.06);
+    z-index: 200; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .panel-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  .detail-panel {
+    position: fixed; right: -440px; top: 0;
+    width: 420px; height: 100vh;
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    z-index: 300; padding: 0;
+    overflow-y: auto;
+    transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .detail-panel.visible { right: 0; }
+
+  .panel-header {
+    padding: 28px 28px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .panel-close {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; background: none;
+    border: 1px solid var(--fg-dim); color: var(--fg-dim);
+    cursor: pointer; padding: 4px 10px; letter-spacing: 1px;
+  }
+  .panel-close:hover { border-color: var(--fg); color: var(--fg); }
+
+  .panel-mark { width: 52px; height: 52px; margin-bottom: 12px; }
+  .panel-mark svg { width: 52px; height: 52px; }
+
+  .panel-code {
+    font-size: 9px; font-weight: 500; letter-spacing: 3px; color: var(--fg-dim);
+  }
+
+  .panel-title {
+    font-size: 13px; font-weight: 500; letter-spacing: 0.5px; margin-top: 4px;
+  }
+
+  .panel-body { padding: 0; }
+
+  .panel-row {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 12px;
+  }
+
+  .panel-row-label {
+    font-size: 9px; font-weight: 500; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--fg-dim); padding-top: 2px;
+  }
+
+  .panel-row-value {
+    font-size: 10px; font-weight: 300; line-height: 1.7; color: var(--fg-secondary);
+  }
+
+  .panel-tag {
+    display: inline-block; font-size: 9px; font-weight: 400; letter-spacing: 0.5px;
+    padding: 2px 8px; border: 1px solid var(--border); margin: 2px 4px 2px 0;
+  }
+
+  .panel-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10px; font-weight: 400;
+  }
+
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-dot.active { background: var(--accent-green); }
+  .status-dot.idle { background: var(--fg-dim); }
+
+  .legend {
+    position: fixed; bottom: 20px; left: 24px; z-index: 50;
+    display: flex; gap: 20px;
+    font-size: 8px; color: var(--fg-dim); letter-spacing: 1.5px; text-transform: uppercase;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 16px; height: 0; }
+  .legend-swatch.solid { border-top: 1px solid var(--fg-dim); }
+  .legend-swatch.dashed { border-top: 1px dashed var(--fg-dim); }
+
+  .map-info {
+    position: fixed; bottom: 20px; right: 24px; z-index: 50;
+    font-size: 8px; color: var(--fg-dim); letter-spacing: 1.5px; text-transform: uppercase;
+    text-align: right; line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="map-container">
+  <canvas id="bgCanvas"></canvas>
+  <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+
+<div class="panel-overlay" id="panelOverlay" onclick="hidePanel()"></div>
+<div class="detail-panel" id="detailPanel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-mark" id="panelMark"></div>
+      <div class="panel-code" id="panelCode"></div>
+      <div class="panel-title" id="panelTitle"></div>
+    </div>
+    <button class="panel-close" onclick="hidePanel()">ESC</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch solid"></div>Pipeline flow</div>
+  <div class="legend-item"><div class="legend-swatch dashed"></div>Data read/write</div>
+  <div class="legend-item"><svg width="7" height="7"><circle cx="3.5" cy="3.5" r="3" fill="var(--accent-green)"/></svg> Active</div>
+</div>
+
+<div class="map-info">
+  Click any node for details<br>
+  Hover to trace connections
+</div>
+
+<script>
+const nodes = [
+  { id:'ft01', code:'FT.01', name:'Researcher', cat:'ft', x:180, y:220, status:'idle' },
+  { id:'ft02', code:'FT.02', name:'Director', cat:'ft', x:360, y:180, status:'idle' },
+  { id:'ft03', code:'FT.03', name:'Strategist', cat:'ft', x:540, y:220, status:'idle' },
+  { id:'ft04', code:'FT.04', name:'Creator', cat:'ft', x:540, y:400, status:'idle' },
+  { id:'ft05', code:'FT.05', name:'Editor', cat:'ft', x:360, y:440, status:'idle' },
+  { id:'ft06', code:'FT.06', name:'Designer', cat:'ft', x:180, y:400, status:'idle' },
+  { id:'ft07', code:'FT.07', name:'Repurposer', cat:'ft', x:80, y:310, status:'idle' },
+
+  { id:'hu01', code:'HU.01', name:'You', cat:'hu', x:800, y:310, status:'active' },
+
+  { id:'ch01', code:'CH.01', name:'Telegram', cat:'ch', x:1020, y:200, status:'active' },
+  { id:'ch02', code:'CH.02', name:'Cron', cat:'ch', x:1020, y:340, status:'active' },
+  { id:'ch03', code:'CH.03', name:'Bot Router', cat:'ch', x:1020, y:480, status:'active' },
+
+  { id:'ds01', code:'DS.01', name:'Database', cat:'ds', x:760, y:600, status:'active' },
+  { id:'ds02', code:'DS.02', name:'Repository', cat:'ds', x:940, y:600, status:'active' },
+  { id:'ds03', code:'DS.03', name:'Server', cat:'ds', x:1100, y:600, status:'active' },
+
+  { id:'sk01', code:'SK.01', name:'voice.md', cat:'sk', x:100, y:580, status:'idle' },
+  { id:'sk02', code:'SK.02', name:'brand-guidelines', cat:'sk', x:230, y:620, status:'active' },
+  { id:'sk03', code:'SK.03', name:'performance', cat:'sk', x:360, y:580, status:'active' },
+  { id:'sk04', code:'SK.04', name:'boundaries', cat:'sk', x:490, y:620, status:'active' },
+  { id:'sk05', code:'SK.05', name:'niche', cat:'sk', x:620, y:580, status:'active' },
+  { id:'sk06', code:'SK.06', name:'quality-standards', cat:'sk', x:490, y:540, status:'active' },
+
+  { id:'pt01', code:'PT.01', name:'Creator Research', cat:'pt', x:60, y:50, status:'idle' },
+  { id:'pt02', code:'PT.02', name:'Performance', cat:'pt', x:230, y:30, status:'idle' },
+  { id:'pt03', code:'PT.03', name:'Cross-Market', cat:'pt', x:400, y:50, status:'idle' },
+  { id:'pt04', code:'PT.04', name:'Lead Agent', cat:'pt', x:570, y:30, status:'idle' },
+];
+
+const connections = [
+  { from:'ft01', to:'ft02', type:'flow' },
+  { from:'ft02', to:'ft03', type:'flow' },
+  { from:'ft03', to:'hu01', type:'flow' },
+  { from:'hu01', to:'ft04', type:'flow' },
+  { from:'ft04', to:'ft05', type:'flow' },
+  { from:'ft05', to:'hu01', type:'flow' },
+  { from:'hu01', to:'ft06', type:'flow' },
+
+  { from:'hu01', to:'ch01', type:'flow' },
+  { from:'hu01', to:'ch03', type:'flow' },
+  { from:'ch02', to:'ft01', type:'data' },
+  { from:'ch02', to:'ft02', type:'data' },
+  { from:'ch02', to:'ft03', type:'data' },
+  { from:'ch02', to:'ft04', type:'data' },
+  { from:'ch02', to:'ft05', type:'data' },
+  { from:'ch03', to:'ch01', type:'flow' },
+
+  { from:'ft01', to:'ds01', type:'data' },
+  { from:'ft02', to:'ds01', type:'data' },
+  { from:'ft03', to:'ds01', type:'data' },
+  { from:'ft04', to:'ds01', type:'data' },
+  { from:'ft05', to:'ds01', type:'data' },
+  { from:'ft06', to:'ds01', type:'data' },
+  { from:'ft07', to:'ds01', type:'data' },
+
+  { from:'ft02', to:'sk03', type:'data' },
+  { from:'ft02', to:'sk02', type:'data' },
+
+  { from:'sk01', to:'ft04', type:'data' },
+  { from:'sk03', to:'ft04', type:'data' },
+  { from:'sk05', to:'ft04', type:'data' },
+  { from:'sk06', to:'ft04', type:'data' },
+  { from:'sk06', to:'ft05', type:'data' },
+
+  { from:'sk02', to:'ft06', type:'data' },
+
+  { from:'pt01', to:'ft03', type:'data' },
+  { from:'pt02', to:'ft04', type:'data' },
+  { from:'pt03', to:'sk05', type:'data' },
+  { from:'pt04', to:'sk03', type:'data' },
+  { from:'pt04', to:'ft02', type:'data' },
+
+  { from:'ds03', to:'ds02', type:'data' },
+  { from:'ds03', to:'ch02', type:'data' },
+
+  { from:'sk04', to:'ft03', type:'data' },
+  { from:'sk04', to:'ft04', type:'data' },
+
+  { from:'ft07', to:'hu01', type:'flow' },
+];
+
+const nodeData = {
+  ft01: { desc:'Scans your configured niche for trending topics weekly. Saves 5-10 fresh topics to database with relevance scores. Keywords come from config/niche.md.', schedule:'Sunday (cron)', reads:['Web sources','niche.md','niche-keywords.md'], writes:['research_topics table'] },
+  ft02: { desc:'The brain. Reads everything — research, analytics, operator feedback, agent failures, image quality notes — and synthesizes into weekly direction. The only agent that connects past performance to future strategy.', schedule:'Sunday (cron)', reads:['research_topics','content_drafts','agent_logs','content-gaps.md','cross-niche-formats.md'], writes:['performance-patterns.md','content-gaps.md','brand-guidelines.md'] },
+  ft03: { desc:'Generates 10 content ideas with relevance scores from research topics and weekly direction. Sends all 10 to Telegram for multi-select. You pick 5, reply DONE to lock the week.', schedule:'Sunday (cron)', reads:['research_topics','performance-patterns.md','content-gaps.md','cross-niche-formats.md'], writes:['content_ideas x 10','Telegram message','bot_state.json'] },
+  ft04: { desc:'Writes the post in your configured voice. The approved idea is injected into the prompt to prevent drift. Picks oldest approved idea (FIFO). Auto-chains to Editor on completion.', schedule:'Mon-Fri daily (cron)', reads:['Approved idea','voice.md','niche.md','quality-standards.md','performance-patterns.md','linkedin-playbook.md'], writes:['content_drafts table'] },
+  ft05: { desc:'Scores drafts on 5 dimensions (0-10 each). Pass threshold: 35/50. On pass, sends text + score to Telegram for human approval. On fail, returns to Writer with specific feedback.', schedule:'Auto-chains from Writer', reads:['content_drafts','quality-standards.md','voice.md','scoring-rubric.md'], writes:['quality_score','Telegram message','bot_state.json'] },
+  ft06: { desc:'Reads the approved draft, picks the best HTML template, fills content variables, and renders a branded JPG via Playwright at 1080x1350. Six template types. Zero API cost. Sends image to Telegram.', schedule:'After human APPROVE', reads:['Approved draft','brand-guidelines.md','templates/*.html','themes/default.json'], writes:['template_name','template_vars','image_url','Telegram photo'] },
+  ft07: { desc:'Repurposes published LinkedIn posts to other platforms — X threads, Substack drafts, TikTok slides. Each follows platform-specific playbooks. Triggered via /repurpose on Telegram.', schedule:'After LinkedIn post', reads:['Published draft','x-playbook.md','substack-playbook.md'], writes:['repurposed_content','Telegram message'] },
+  hu01: { desc:'You — the human-in-the-loop. Reviews 10 ideas and multi-selects picks. Approves/rejects drafts, gives image feedback, provides strategic direction. Posts to LinkedIn manually.', schedule:'Always available', reads:['Telegram notifications'], writes:['Idea multi-select','APPROVE/REJECT','/image_feedback','/marketing_director','/repurpose'] },
+  ch01: { desc:'Primary human interface. Idea selection, draft approval, image feedback, strategic direction — all via bot commands. Whitelist secured.', schedule:'Always on', reads:['Human replies'], writes:['Agent notifications','Ideas','Drafts','Images'] },
+  ch02: { desc:'6 scheduled jobs orchestrating the weekly pipeline. Agents run on their own — no central orchestrator.', schedule:'6 active jobs', reads:[], writes:['Agent triggers'] },
+  ch03: { desc:'Central message router. State machine: IDLE → AWAITING_IDEA_SELECTION → AWAITING_DRAFT_APPROVAL → AWAITING_IMAGE_APPROVAL. Handles security, validation, routing.', schedule:'Always running', reads:['Telegram updates','bot_state.json','Database'], writes:['State transitions','Agent triggers'] },
+  ds01: { desc:'Supabase operational database. Tables: research_topics, content_ideas, content_drafts, agent_logs, repurposed_content. Every agent reads and writes here.', schedule:'Always on', reads:[], writes:[] },
+  ds02: { desc:'GitHub repository. Version-controlled code, agent SKILL.md files, config and rules files. Snapshot every 4 days via cron.', schedule:'Snapshot every 4 days', reads:[], writes:[] },
+  ds03: { desc:'VPS server running all agents, bot, and cron jobs. Agent outputs and generated images stored on filesystem. Runs as dedicated brandcrew.', schedule:'Always on', reads:[], writes:[] },
+  sk01: { desc:'Your voice profile — tone, phrases, perspective. Fill this in during setup or let Claude Code interview you. The single biggest quality factor for content.', schedule:'Set during setup', reads:[], writes:[] },
+  sk02: { desc:'Image style direction for the template system. Colors, typography, template preferences. Marketing Director can update based on image feedback patterns.', schedule:'Updated by FT.02', reads:[], writes:[] },
+  sk03: { desc:'Weekly direction from Marketing Director — content type priorities, what worked, what to stop, operator preferences.', schedule:'Updated weekly by FT.02', reads:[], writes:[] },
+  sk04: { desc:'Content limits — topics and approaches that are off-limits regardless of trending potential.', schedule:'Set during setup', reads:[], writes:[] },
+  sk05: { desc:'Your niche definition — industry keywords, tools, audience, competitive landscape. The foundation that all agents read.', schedule:'Set during setup', reads:[], writes:[] },
+  sk06: { desc:'Quality standards and anti-slop filter. Banned phrases, cliches, and patterns that make content sound AI-generated. Writer and Editor both check against this.', schedule:'Set during setup', reads:[], writes:[] },
+  pt01: { desc:'Maps top creators in your niche on LinkedIn. Output: watchlist.md. Run manually on local machine via Agent Teams.', schedule:'Manual / quarterly', reads:[], writes:['watchlist.md'] },
+  pt02: { desc:'Analyzes what content performs and why across your niche. Output: post-examples.md.', schedule:'Manual / quarterly', reads:[], writes:['post-examples.md'] },
+  pt03: { desc:'Finds high-performing formats from outside your niche to transplant. Output: cross-niche-formats.md.', schedule:'Manual / quarterly', reads:[], writes:['cross-niche-formats.md'] },
+  pt04: { desc:'Coordinates research team, synthesises all findings. Outputs: RESEARCH_BRIEF.md + content-gaps.md.', schedule:'Manual / quarterly', reads:[], writes:['RESEARCH_BRIEF.md','content-gaps.md'] },
+};
+
+const marks = {
+  ft01: `<circle cx="24" cy="24" r="3" fill="#1A1A1A"/><circle cx="24" cy="24" r="10" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="18" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="24" y1="24" x2="24" y2="6" stroke="#1A1A1A" stroke-width="1.5"/>`,
+  ft02: `<circle cx="24" cy="24" r="5" fill="#1A1A1A"/><line x1="8" y1="10" x2="20" y2="21" stroke="#1A1A1A" stroke-width="1.5"/><line x1="40" y1="10" x2="28" y2="21" stroke="#1A1A1A" stroke-width="1.5"/><line x1="8" y1="38" x2="20" y2="27" stroke="#1A1A1A" stroke-width="1.5"/><line x1="40" y1="38" x2="28" y2="27" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="6" x2="24" y2="19" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="8" cy="10" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="10" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="8" cy="38" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="38" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="6" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/>`,
+  ft03: `<circle cx="10" cy="24" r="3" fill="#1A1A1A"/><line x1="13" y1="24" x2="22" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="22" cy="24" r="2" fill="#1A1A1A"/><line x1="24" y1="23" x2="36" y2="10" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="24" x2="38" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="25" x2="36" y2="38" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="37" cy="10" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="39" cy="24" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="37" cy="38" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/>`,
+  ft04: `<line x1="12" y1="36" x2="36" y2="12" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="36" cy="12" r="3" fill="#1A1A1A"/><line x1="12" y1="36" x2="20" y2="36" stroke="#1A1A1A" stroke-width="1"/><line x1="12" y1="36" x2="12" y2="28" stroke="#1A1A1A" stroke-width="1"/>`,
+  ft05: `<line x1="6" y1="24" x2="16" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><rect x="16" y="10" width="16" height="28" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="32" y1="24" x2="42" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="18" r="2" fill="#1A1A1A"/><line x1="22" y1="30" x2="26" y2="30" stroke="#1A1A1A" stroke-width="1.5"/>`,
+  ft06: `<rect x="8" y="8" width="32" height="32" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="14" y="14" width="20" height="20" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-dasharray="2 3"/><circle cx="24" cy="24" r="4" fill="#1A1A1A"/>`,
+  ft07: `<path d="M12,24 L18,14 L24,28 L30,18 L36,24" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="6" y1="38" x2="42" y2="38" stroke="#1A1A1A" stroke-width="1"/>`,
+  hu01: `<circle cx="24" cy="24" r="10" fill="#1A1A1A"/><circle cx="24" cy="24" r="16" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-dasharray="3 3"/>`,
+  ch01: `<polygon points="8,10 40,24 8,38 14,24" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="14" cy="24" r="2" fill="#1A1A1A"/>`,
+  ch02: `<circle cx="24" cy="24" r="16" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="24" y1="24" x2="24" y2="12" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="24" x2="32" y2="28" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/>`,
+  ch03: `<polygon points="16,8 32,8 40,16 40,32 32,40 16,40 8,32 8,16" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="4" fill="#1A1A1A"/><line x1="24" y1="20" x2="24" y2="12" stroke="#1A1A1A" stroke-width="1"/><line x1="28" y1="24" x2="36" y2="24" stroke="#1A1A1A" stroke-width="1"/><line x1="24" y1="28" x2="24" y2="36" stroke="#1A1A1A" stroke-width="1"/><line x1="20" y1="24" x2="12" y2="24" stroke="#1A1A1A" stroke-width="1"/>`,
+  ds01: `<ellipse cx="24" cy="14" rx="14" ry="5" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="10" y1="14" x2="10" y2="34" stroke="#1A1A1A" stroke-width="1.5"/><line x1="38" y1="14" x2="38" y2="34" stroke="#1A1A1A" stroke-width="1.5"/><ellipse cx="24" cy="24" rx="14" ry="5" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-opacity="0.5"/><ellipse cx="24" cy="34" rx="14" ry="5" stroke="#1A1A1A" stroke-width="1.5" fill="none"/>`,
+  ds02: `<circle cx="24" cy="8" r="3" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="14" cy="40" r="3" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="34" cy="40" r="3" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="24" y1="11" x2="24" y2="26" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="26" x2="14" y2="37" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="26" x2="34" y2="37" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="26" r="2" fill="#1A1A1A"/>`,
+  ds03: `<rect x="8" y="8" width="32" height="32" stroke="#1A1A1A" stroke-width="1" fill="none"/><circle cx="16" cy="16" r="2" fill="#1A1A1A"/><circle cx="24" cy="16" r="2" fill="#1A1A1A"/><circle cx="32" cy="16" r="2" fill="#1A1A1A"/><circle cx="16" cy="24" r="2" fill="#1A1A1A"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/><circle cx="32" cy="24" r="2" fill="#1A1A1A"/><circle cx="16" cy="32" r="2" fill="#1A1A1A"/><circle cx="24" cy="32" r="2" fill="#1A1A1A"/><circle cx="32" cy="32" r="2" fill="#1A1A1A"/>`,
+  sk01: `<line x1="24" y1="14" x2="24" y2="34" stroke="#1A1A1A" stroke-width="2"/><line x1="18" y1="18" x2="18" y2="30" stroke="#1A1A1A" stroke-width="2"/><line x1="12" y1="21" x2="12" y2="27" stroke="#1A1A1A" stroke-width="2"/><line x1="30" y1="18" x2="30" y2="30" stroke="#1A1A1A" stroke-width="2"/><line x1="36" y1="21" x2="36" y2="27" stroke="#1A1A1A" stroke-width="2"/>`,
+  sk02: `<rect x="6" y="6" width="36" height="36" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="14" y="14" width="20" height="20" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="20" y="20" width="8" height="8" fill="#1A1A1A"/>`,
+  sk03: `<polyline points="8,36 16,28 24,32 32,18 40,12" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="8" cy="36" r="2" fill="#1A1A1A"/><circle cx="16" cy="28" r="2" fill="#1A1A1A"/><circle cx="24" cy="32" r="2" fill="#1A1A1A"/><circle cx="32" cy="18" r="2" fill="#1A1A1A"/><circle cx="40" cy="12" r="2" fill="#1A1A1A"/>`,
+  sk04: `<rect x="8" y="8" width="32" height="32" stroke="#1A1A1A" stroke-width="1.5" fill="none" stroke-dasharray="4 4"/><line x1="16" y1="24" x2="32" y2="24" stroke="#1A1A1A" stroke-width="1"/>`,
+  sk05: `<circle cx="24" cy="24" r="16" stroke="#1A1A1A" stroke-width="1" fill="none"/><circle cx="24" cy="24" r="10" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="4" fill="#1A1A1A"/>`,
+  sk06: `<line x1="12" y1="12" x2="36" y2="36" stroke="#1A1A1A" stroke-width="2"/><line x1="36" y1="12" x2="12" y2="36" stroke="#1A1A1A" stroke-width="2"/><circle cx="24" cy="24" r="14" stroke="#1A1A1A" stroke-width="1" fill="none"/>`,
+  pt01: `<ellipse cx="24" cy="24" rx="16" ry="10" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="5" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/>`,
+  pt02: `<line x1="12" y1="38" x2="12" y2="22" stroke="#1A1A1A" stroke-width="3"/><line x1="20" y1="38" x2="20" y2="14" stroke="#1A1A1A" stroke-width="3"/><line x1="28" y1="38" x2="28" y2="26" stroke="#1A1A1A" stroke-width="3"/><line x1="36" y1="38" x2="36" y2="10" stroke="#1A1A1A" stroke-width="3"/><line x1="6" y1="38" x2="42" y2="38" stroke="#1A1A1A" stroke-width="1"/>`,
+  pt03: `<circle cx="24" cy="24" r="14" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="24" y1="6" x2="24" y2="42" stroke="#1A1A1A" stroke-width="1"/><line x1="6" y1="24" x2="42" y2="24" stroke="#1A1A1A" stroke-width="1"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/>`,
+  pt04: `<polygon points="24,6 42,24 24,42 6,24" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><polygon points="24,16 32,24 24,32 16,24" stroke="#1A1A1A" stroke-width="1" fill="none"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/>`,
+};
+
+// RENDER
+const svg = document.getElementById('mapSvg');
+const W = 1200, H = 680;
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+const ox = 20, oy = 20;
+
+const zoneGroups = {
+  'FULL-TIME PIPELINE': ['ft01','ft02','ft03','ft04','ft05','ft06','ft07'],
+  'HUMAN + COMMS': ['hu01','ch01','ch02','ch03'],
+  'DATA STORES': ['ds01','ds02','ds03'],
+  'SHARED KNOWLEDGE': ['sk01','sk02','sk03','sk04','sk05','sk06'],
+  'PART-TIME INTELLIGENCE': ['pt01','pt02','pt03','pt04'],
+};
+
+function addZoneLabel(x, y, text) {
+  const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+  t.setAttribute('x', x + ox); t.setAttribute('y', y + oy);
+  t.setAttribute('class','zone-text');
+  t.textContent = text;
+  t.style.cursor = 'pointer';
+  t.addEventListener('mouseenter', () => highlightGroup(text));
+  t.addEventListener('mouseleave', () => clearHighlights());
+  svg.appendChild(t);
+}
+
+function highlightGroup(zoneName) {
+  const groupIds = zoneGroups[zoneName] || [];
+  if (!groupIds.length) return;
+  Object.values(nodeEls).forEach(el => el.classList.add('dimmed'));
+  connEls.forEach(el => { el.classList.add('dimmed'); el.classList.remove('highlighted'); });
+  groupIds.forEach(id => nodeEls[id]?.classList.remove('dimmed'));
+  connEls.forEach(el => {
+    if (groupIds.includes(el.dataset.from) && groupIds.includes(el.dataset.to)) {
+      el.classList.remove('dimmed');
+      el.classList.add('highlighted');
+    }
+  });
+}
+
+addZoneLabel(100, 148, 'FULL-TIME PIPELINE');
+addZoneLabel(750, 148, 'HUMAN + COMMS');
+addZoneLabel(750, 540, 'DATA STORES');
+addZoneLabel(100, 490, 'SHARED KNOWLEDGE');
+addZoneLabel(100, 10, 'PART-TIME INTELLIGENCE');
+
+// Draw connections
+const connEls = [];
+connections.forEach(c => {
+  const from = nodes.find(n => n.id === c.from);
+  const to = nodes.find(n => n.id === c.to);
+  if (!from || !to) return;
+
+  const x1 = from.x + ox, y1 = from.y + oy;
+  const x2 = to.x + ox, y2 = to.y + oy;
+
+  const dx = x2 - x1, dy = y2 - y1;
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const curve = dist * 0.15;
+  const nx = -dy / dist * curve, ny = dx / dist * curve;
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d', `M ${x1} ${y1} Q ${mx + nx} ${my + ny} ${x2} ${y2}`);
+  path.setAttribute('class', `conn-line ${c.type === 'data' ? 'data-flow' : ''}`);
+  path.dataset.from = c.from;
+  path.dataset.to = c.to;
+  svg.appendChild(path);
+  connEls.push(path);
+});
+
+// Draw nodes
+const nodeEls = {};
+nodes.forEach(n => {
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('class','node-group');
+  g.dataset.id = n.id;
+  g.setAttribute('transform', `translate(${n.x + ox - 24}, ${n.y + oy - 24})`);
+
+  const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('class','node-bg');
+  bg.setAttribute('x','-8'); bg.setAttribute('y','-4');
+  bg.setAttribute('width','64'); bg.setAttribute('height','72');
+  bg.setAttribute('rx','2');
+  g.appendChild(bg);
+
+  const markG = document.createElementNS('http://www.w3.org/2000/svg','g');
+  markG.innerHTML = marks[n.id] || '';
+  g.appendChild(markG);
+
+  if (n.status === 'active') {
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx','42'); dot.setAttribute('cy','6'); dot.setAttribute('r','3');
+    dot.setAttribute('fill', '#5CBF3A');
+    g.appendChild(dot);
+  }
+
+  const code = document.createElementNS('http://www.w3.org/2000/svg','text');
+  code.setAttribute('class','node-label');
+  code.setAttribute('x','24'); code.setAttribute('y','56');
+  code.textContent = n.code;
+  g.appendChild(code);
+
+  const name = document.createElementNS('http://www.w3.org/2000/svg','text');
+  name.setAttribute('class','node-name-label');
+  name.setAttribute('x','24'); name.setAttribute('y','66');
+  name.textContent = n.name;
+  g.appendChild(name);
+
+  g.addEventListener('mouseenter', () => highlightNode(n.id));
+  g.addEventListener('mouseleave', () => clearHighlights());
+  g.addEventListener('click', () => showPanel(n.id));
+
+  svg.appendChild(g);
+  nodeEls[n.id] = g;
+});
+
+// INTERACTIONS
+let selectedNode = null;
+
+function highlightNode(id) {
+  Object.values(nodeEls).forEach(el => el.classList.add('dimmed'));
+  connEls.forEach(el => { el.classList.add('dimmed'); el.classList.remove('highlighted'); });
+  nodeEls[id]?.classList.remove('dimmed');
+  const connected = new Set();
+  connected.add(id);
+  connEls.forEach(el => {
+    if (el.dataset.from === id || el.dataset.to === id) {
+      el.classList.remove('dimmed');
+      el.classList.add('highlighted');
+      connected.add(el.dataset.from);
+      connected.add(el.dataset.to);
+    }
+  });
+  connected.forEach(cid => nodeEls[cid]?.classList.remove('dimmed'));
+}
+
+function clearHighlights() {
+  if (selectedNode) return;
+  Object.values(nodeEls).forEach(el => el.classList.remove('dimmed'));
+  connEls.forEach(el => { el.classList.remove('dimmed'); el.classList.remove('highlighted'); });
+}
+
+function showPanel(id) {
+  const n = nodes.find(nn => nn.id === id);
+  const d = nodeData[id];
+  if (!n || !d) return;
+
+  selectedNode = id;
+  highlightNode(id);
+
+  document.getElementById('panelMark').innerHTML = `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${marks[id]}</svg>`;
+  document.getElementById('panelCode').textContent = n.code;
+  document.getElementById('panelTitle').textContent = n.name;
+
+  let html = '';
+  const statusClass = n.status === 'active' ? 'active' : 'idle';
+  html += `<div class="panel-row"><div class="panel-row-label">Status</div><div class="panel-row-value"><div class="panel-status"><div class="status-dot ${statusClass}"></div>${n.status}</div></div></div>`;
+  if (d.schedule) html += `<div class="panel-row"><div class="panel-row-label">Schedule</div><div class="panel-row-value">${d.schedule}</div></div>`;
+  if (d.desc) html += `<div class="panel-row"><div class="panel-row-label">About</div><div class="panel-row-value">${d.desc}</div></div>`;
+  if (d.reads?.length) html += `<div class="panel-row"><div class="panel-row-label">Reads</div><div class="panel-row-value">${d.reads.map(r=>`<span class="panel-tag">${r}</span>`).join('')}</div></div>`;
+  if (d.writes?.length) html += `<div class="panel-row"><div class="panel-row-label">Writes</div><div class="panel-row-value">${d.writes.map(w=>`<span class="panel-tag">${w}</span>`).join('')}</div></div>`;
+
+  document.getElementById('panelBody').innerHTML = html;
+  document.getElementById('detailPanel').classList.add('visible');
+  document.getElementById('panelOverlay').classList.add('visible');
+}
+
+function hidePanel() {
+  selectedNode = null;
+  document.getElementById('detailPanel').classList.remove('visible');
+  document.getElementById('panelOverlay').classList.remove('visible');
+  clearHighlights();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hidePanel(); });
+
+// Background particles
+(function() {
+  const c = document.getElementById('bgCanvas');
+  const ctx = c.getContext('2d');
+  function resize() { c.width = c.parentElement.clientWidth; c.height = c.parentElement.clientHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles = [];
+  for (let i = 0; i < 200; i++) {
+    particles.push({
+      x: Math.random(), y: Math.random(),
+      vx: (Math.random()-0.5)*0.0002, vy: (Math.random()-0.5)*0.0002,
+      size: Math.random()*1.2+0.3, phase: Math.random()*Math.PI*2
+    });
+  }
+
+  let t = 0;
+  function draw() {
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h);
+    for (const p of particles) {
+      p.x += p.vx + Math.sin(t*0.5+p.phase)*0.00005;
+      p.y += p.vy + Math.cos(t*0.3+p.phase)*0.00005;
+      if(p.x<0)p.x=1; if(p.x>1)p.x=0; if(p.y<0)p.y=1; if(p.y>1)p.y=0;
+      ctx.beginPath();
+      ctx.arc(p.x*w, p.y*h, p.size, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(26,26,26,0.06)';
+      ctx.fill();
+    }
+    t+=0.02;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

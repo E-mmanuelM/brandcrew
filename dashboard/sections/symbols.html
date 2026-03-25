@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — Symbol System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --bg-panel: #FAF7F2;
+    --fg: #1A1A1A;
+    --fg-secondary: #6B6560;
+    --fg-dim: #A09A93;
+    --accent-green: #5CBF3A;
+    --accent-red: #C44B28;
+    --mark-stroke: #1A1A1A;
+    --connection: #C5BFB6;
+    --border: #D6D1C8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── NAV BAR ─────────────────────────────────── */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 16px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-brand {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+  }
+
+  .nav-tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-right: none;
+    background: transparent;
+    color: var(--fg-dim);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .nav-tab:last-child { border-right: 1px solid var(--border); }
+  .nav-tab:hover { color: var(--fg); background: var(--bg-alt); }
+  .nav-tab.active { background: var(--fg); color: var(--bg); }
+
+  .nav-version {
+    font-size: 9px;
+    font-weight: 300;
+    color: var(--fg-dim);
+    letter-spacing: 1.5px;
+  }
+
+  /* ── HERO ────────────────────────────────────── */
+  .hero {
+    margin-top: 52px;
+    padding: 60px 60px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    margin-bottom: 16px;
+  }
+
+  .hero-title {
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: -0.5px;
+    line-height: 1.3;
+    margin-bottom: 16px;
+  }
+
+  .hero-title strong { font-weight: 600; }
+
+  .hero-desc {
+    font-size: 11px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: var(--fg-secondary);
+    max-width: 600px;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 24px;
+  }
+
+  .hero-meta-item {
+    font-size: 9px;
+    font-weight: 400;
+    letter-spacing: 1.5px;
+    color: var(--fg-dim);
+  }
+
+  .hero-meta-item span {
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  /* ── PARTICLE STRIP ──────────────────────────── */
+  .particle-strip {
+    width: 100%;
+    height: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #particleCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ── CATEGORY SECTION ────────────────────────── */
+  .category {
+    padding: 48px 60px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .category:last-of-type {
+    border-bottom: none;
+  }
+
+  .category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 36px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .category-title {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .category-meta {
+    font-size: 9px;
+    font-weight: 300;
+    color: var(--fg-dim);
+    letter-spacing: 1.5px;
+  }
+
+  .category-desc {
+    font-size: 10px;
+    font-weight: 300;
+    color: var(--fg-secondary);
+    line-height: 1.7;
+    max-width: 600px;
+    margin-bottom: 32px;
+  }
+
+  /* ── SYMBOL ROW ──────────────────────────────── */
+  .symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0;
+  }
+
+  .symbol-card {
+    padding: 24px 20px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.25s ease;
+    cursor: default;
+    position: relative;
+  }
+
+  .symbol-card:hover {
+    background: var(--bg-alt);
+  }
+
+  .symbol-card:hover .symbol-mark svg {
+    transform: scale(1.08);
+  }
+
+  .symbol-mark {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .symbol-mark svg {
+    width: 48px;
+    height: 48px;
+    transition: transform 0.25s ease;
+  }
+
+  .symbol-code {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 2.5px;
+    color: var(--fg-dim);
+    margin-bottom: 4px;
+  }
+
+  .symbol-name {
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.4;
+    letter-spacing: 0.5px;
+  }
+
+  .symbol-desc {
+    font-size: 9px;
+    font-weight: 300;
+    color: var(--fg-secondary);
+    text-align: center;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* Status badges on cards */
+  .symbol-card .badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .badge.live { background: var(--accent-green); }
+  .badge.placeholder { background: var(--accent-red); }
+
+  /* ── DESIGN RULES SECTION ────────────────────── */
+  .rules-section {
+    padding: 48px 60px;
+    border-top: 1px solid var(--border);
+  }
+
+  .rules-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 32px;
+  }
+
+  .rule-card {
+    padding: 24px 20px;
+    border: 1px solid var(--border);
+  }
+
+  .rule-label {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    margin-bottom: 8px;
+  }
+
+  .rule-value {
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  .rule-swatch {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: center;
+  }
+
+  .swatch {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .swatch-label {
+    font-size: 9px;
+    color: var(--fg-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── FOOTER ──────────────────────────────────── */
+  .footer {
+    padding: 32px 60px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .footer-text {
+    font-size: 9px;
+    font-weight: 300;
+    color: var(--fg-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- NAV                                            -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- HERO                                           -->
+<!-- ═══════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-label">System / Symbol System</div>
+  <h1 class="hero-title"><strong>Visual Alphabet</strong></h1>
+  <p class="hero-desc">
+    Every component in the system has a unique mark — a geometric symbol built from a shared visual DNA. The mark identifies it instantly. The code classifies it. The name explains it. All three together, always.
+  </p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">TOTAL MARKS: <span>25</span></div>
+    <div class="hero-meta-item">CATEGORIES: <span>8</span></div>
+    <div class="hero-meta-item">GRID: <span>48 × 48</span></div>
+    <div class="hero-meta-item">STROKE: <span>1.5PX</span></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PARTICLE STRIP                                 -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="particle-strip">
+  <canvas id="particleCanvas"></canvas>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- FULL-TIME AGENTS                               -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="category">
+  <div class="category-header">
+    <span class="category-title">Full-Time Agents</span>
+    <span class="category-meta">FT.01 — FT.07 / VPS Cron / Always On</span>
+  </div>
+  <p class="category-desc">The operational pipeline. These agents run on the server via cron schedule — researching, directing, writing, scoring, designing, and repurposing every week. They communicate through shared files and database, never directly.</p>
+  <div class="symbol-grid">
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="3" fill="var(--mark-stroke)"/><circle cx="24" cy="24" r="10" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="18" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><line x1="24" y1="24" x2="24" y2="6" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="24" y1="24" x2="38" y2="14" stroke="var(--mark-stroke)" stroke-width="1.5" stroke-opacity="0.4"/></svg></div>
+      <div class="symbol-code">FT.01</div>
+      <div class="symbol-name">Niche Content Researcher</div>
+      <div class="symbol-desc">Scans niche weekly for trending topics and saves to database with relevance scores</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="5" fill="var(--mark-stroke)"/><line x1="8" y1="10" x2="20" y2="21" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="40" y1="10" x2="28" y2="21" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="8" y1="38" x2="20" y2="27" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="40" y1="38" x2="28" y2="27" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="24" y1="6" x2="24" y2="19" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="8" cy="10" r="2" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="40" cy="10" r="2" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="8" cy="38" r="2" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="40" cy="38" r="2" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="24" cy="6" r="2" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/></svg></div>
+      <div class="symbol-code">FT.02</div>
+      <div class="symbol-name">Marketing Director</div>
+      <div class="symbol-desc">Reads all intelligence and synthesizes into weekly direction for the pipeline</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="10" cy="24" r="3" fill="var(--mark-stroke)"/><line x1="13" y1="24" x2="22" y2="24" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="22" cy="24" r="2" fill="var(--mark-stroke)"/><line x1="24" y1="23" x2="36" y2="10" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="24" y1="24" x2="38" y2="24" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="24" y1="25" x2="36" y2="38" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="37" cy="10" r="3" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="39" cy="24" r="3" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="37" cy="38" r="3" fill="none" stroke="var(--mark-stroke)" stroke-width="1.5"/></svg></div>
+      <div class="symbol-code">FT.03</div>
+      <div class="symbol-name">Content Strategist</div>
+      <div class="symbol-desc">Generates 10 distinct content ideas from research for human multi-select</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="12" y1="36" x2="36" y2="12" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="36" cy="12" r="3" fill="var(--mark-stroke)"/><line x1="12" y1="36" x2="20" y2="36" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="12" y1="36" x2="12" y2="28" stroke="var(--mark-stroke)" stroke-width="1"/></svg></div>
+      <div class="symbol-code">FT.04</div>
+      <div class="symbol-name">Content Creator</div>
+      <div class="symbol-desc">Writes posts in your configured voice from the selected idea</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="6" y1="24" x2="16" y2="24" stroke="var(--mark-stroke)" stroke-width="1.5"/><rect x="16" y="10" width="16" height="28" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><line x1="16" y1="24" x2="32" y2="24" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="32" y1="24" x2="42" y2="24" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="24" cy="18" r="2" fill="var(--mark-stroke)"/><line x1="22" y1="30" x2="26" y2="30" stroke="var(--mark-stroke)" stroke-width="1.5"/></svg></div>
+      <div class="symbol-code">FT.05</div>
+      <div class="symbol-name">Content Editor</div>
+      <div class="symbol-desc">Scores drafts on 5 dimensions — pass/fail quality gate at 35/50</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><rect x="14" y="14" width="20" height="20" stroke="var(--mark-stroke)" stroke-width="1" fill="none" stroke-dasharray="2 3"/><circle cx="24" cy="24" r="4" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">FT.06</div>
+      <div class="symbol-name">Social Media Designer</div>
+      <div class="symbol-desc">Selects templates and generates post designs via HTML templates + Playwright</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="16" cy="24" r="8" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="32" cy="24" r="8" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><line x1="24" y1="18" x2="24" y2="30" stroke="var(--mark-stroke)" stroke-width="1" stroke-dasharray="2 2"/></svg></div>
+      <div class="symbol-code">FT.07</div>
+      <div class="symbol-name">Content Repurposer</div>
+      <div class="symbol-desc">Adapts approved posts into platform-native formats for X, newsletters, blog</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PART-TIME AGENTS                               -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="category">
+  <div class="category-header">
+    <span class="category-title">Part-Time Agents</span>
+    <span class="category-meta">PT.01 — PT.04 / Manual / Intelligence Layer</span>
+  </div>
+  <p class="category-desc">Run manually on local machine for deep research. These produce the foundational intelligence that full-time agents depend on — creator maps, content gap analysis, cross-market formats.</p>
+  <div class="symbol-grid">
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><ellipse cx="24" cy="24" rx="16" ry="10" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="5" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="2" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">PT.01</div>
+      <div class="symbol-name">Niche Creator Researcher</div>
+      <div class="symbol-desc">Maps top creators in your configured niche</div>
+    </div>
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="12" y1="38" x2="12" y2="22" stroke="var(--mark-stroke)" stroke-width="3"/><line x1="20" y1="38" x2="20" y2="14" stroke="var(--mark-stroke)" stroke-width="3"/><line x1="28" y1="38" x2="28" y2="26" stroke="var(--mark-stroke)" stroke-width="3"/><line x1="36" y1="38" x2="36" y2="10" stroke="var(--mark-stroke)" stroke-width="3"/><line x1="6" y1="38" x2="42" y2="38" stroke="var(--mark-stroke)" stroke-width="1"/></svg></div>
+      <div class="symbol-code">PT.02</div>
+      <div class="symbol-name">Content Performance Analyst</div>
+      <div class="symbol-desc">Analyzes what content performs and why across the niche</div>
+    </div>
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><line x1="24" y1="6" x2="24" y2="42" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="6" y1="24" x2="42" y2="24" stroke="var(--mark-stroke)" stroke-width="1"/><circle cx="24" cy="24" r="2" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">PT.03</div>
+      <div class="symbol-name">Cross-Market Researcher</div>
+      <div class="symbol-desc">Finds high-performing formats outside the niche to transplant</div>
+    </div>
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><polygon points="24,6 42,24 24,42 6,24" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><polygon points="24,16 32,24 24,32 16,24" stroke="var(--mark-stroke)" stroke-width="1" fill="none"/><circle cx="24" cy="24" r="2" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">PT.04</div>
+      <div class="symbol-name">Lead Agent</div>
+      <div class="symbol-desc">Coordinates research team and synthesises findings into master reports</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- HUMAN TOUCHPOINTS                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="category">
+  <div class="category-header">
+    <span class="category-title">Human Touchpoints</span>
+    <span class="category-meta">HU.01 / Decision Gates</span>
+  </div>
+  <p class="category-desc">You in the loop. The system never acts autonomously on critical decisions — idea selection, draft approval, and LinkedIn posting always require human judgment. Filled circles distinguish humans from agent outlines.</p>
+  <div class="symbol-grid">
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" fill="var(--mark-stroke)"/><circle cx="24" cy="24" r="16" stroke="var(--mark-stroke)" stroke-width="1" fill="none" stroke-dasharray="3 3"/></svg></div>
+      <div class="symbol-code">HU.01</div>
+      <div class="symbol-name">You (Operator)</div>
+      <div class="symbol-desc">System operator — selects ideas, approves drafts, gives feedback, directs strategy, posts to LinkedIn</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- COMMUNICATION CHANNELS                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="category">
+  <div class="category-header">
+    <span class="category-title">Communication Channels</span>
+    <span class="category-meta">CH.01 — CH.03 / Messaging & Scheduling</span>
+  </div>
+  <p class="category-desc">How the system talks to humans and how agents get triggered. Agents communicate through files and database — not real-time. Humans interact through the messaging bot.</p>
+  <div class="symbol-grid">
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><polygon points="8,10 40,24 8,38 14,24" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="14" cy="24" r="2" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">CH.01</div>
+      <div class="symbol-name">Telegram</div>
+      <div class="symbol-desc">Primary human interface — ideas, approvals, feedback, commands</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="16" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><line x1="24" y1="24" x2="24" y2="12" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="24" y1="24" x2="32" y2="28" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="24" cy="24" r="2" fill="var(--mark-stroke)"/><line x1="24" y1="8" x2="24" y2="10" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="24" y1="38" x2="24" y2="40" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="8" y1="24" x2="10" y2="24" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="38" y1="24" x2="40" y2="24" stroke="var(--mark-stroke)" stroke-width="1"/></svg></div>
+      <div class="symbol-code">CH.02</div>
+      <div class="symbol-name">Cron Scheduler</div>
+      <div class="symbol-desc">7 scheduled jobs triggering agents on the weekly cycle</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><polygon points="16,8 32,8 40,16 40,32 32,40 16,40 8,32 8,16" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="4" fill="var(--mark-stroke)"/><line x1="24" y1="20" x2="24" y2="12" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="28" y1="24" x2="36" y2="24" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="24" y1="28" x2="24" y2="36" stroke="var(--mark-stroke)" stroke-width="1"/><line x1="20" y1="24" x2="12" y2="24" stroke="var(--mark-stroke)" stroke-width="1"/></svg></div>
+      <div class="symbol-code">CH.03</div>
+      <div class="symbol-name">Bot Router</div>
+      <div class="symbol-desc">Central message router — state machine, security, command dispatch</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DATA STORES                                    -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="category">
+  <div class="category-header">
+    <span class="category-title">Data Stores</span>
+    <span class="category-meta">DS.01 — DS.03 / Persistence Layer</span>
+  </div>
+  <p class="category-desc">Where data lives. Operational data in the database, version-controlled code on the repository, and agent outputs on the server filesystem.</p>
+  <div class="symbol-grid">
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><ellipse cx="24" cy="14" rx="14" ry="5" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><line x1="10" y1="14" x2="10" y2="34" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="38" y1="14" x2="38" y2="34" stroke="var(--mark-stroke)" stroke-width="1.5"/><ellipse cx="24" cy="24" rx="14" ry="5" stroke="var(--mark-stroke)" stroke-width="1" fill="none" stroke-opacity="0.5"/><ellipse cx="24" cy="34" rx="14" ry="5" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/></svg></div>
+      <div class="symbol-code">DS.01</div>
+      <div class="symbol-name">Database</div>
+      <div class="symbol-desc">Operational data — topics, ideas, drafts, logs, templates</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="8" r="3" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="14" cy="40" r="3" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="34" cy="40" r="3" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><line x1="24" y1="11" x2="24" y2="26" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="24" y1="26" x2="14" y2="37" stroke="var(--mark-stroke)" stroke-width="1.5"/><line x1="24" y1="26" x2="34" y2="37" stroke="var(--mark-stroke)" stroke-width="1.5"/><circle cx="24" cy="26" r="2" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">DS.02</div>
+      <div class="symbol-name">Repository</div>
+      <div class="symbol-desc">Open source code, agent skills, shared knowledge files</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" stroke="var(--mark-stroke)" stroke-width="1" fill="none"/><circle cx="16" cy="16" r="2" fill="var(--mark-stroke)"/><circle cx="24" cy="16" r="2" fill="var(--mark-stroke)"/><circle cx="32" cy="16" r="2" fill="var(--mark-stroke)"/><circle cx="16" cy="24" r="2" fill="var(--mark-stroke)"/><circle cx="24" cy="24" r="2" fill="var(--mark-stroke)"/><circle cx="32" cy="24" r="2" fill="var(--mark-stroke)"/><circle cx="16" cy="32" r="2" fill="var(--mark-stroke)"/><circle cx="24" cy="32" r="2" fill="var(--mark-stroke)"/><circle cx="32" cy="32" r="2" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">DS.03</div>
+      <div class="symbol-name">Cloud Server</div>
+      <div class="symbol-desc">Agent outputs, generated designs, template files</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SHARED KNOWLEDGE FILES                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="category">
+  <div class="category-header">
+    <span class="category-title">Shared Knowledge Files</span>
+    <span class="category-meta">SK.01 — SK.06 / Agent Memory</span>
+  </div>
+  <p class="category-desc">The shared intelligence layer. These files are the communication backbone — agents don't talk to each other, they read and write files. Each file serves a specific purpose and is loaded only by the agents that need it.</p>
+  <div class="symbol-grid">
+
+    <div class="symbol-card"><div class="badge placeholder"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="24" y1="14" x2="24" y2="34" stroke="var(--mark-stroke)" stroke-width="2"/><line x1="18" y1="18" x2="18" y2="30" stroke="var(--mark-stroke)" stroke-width="2"/><line x1="12" y1="21" x2="12" y2="27" stroke="var(--mark-stroke)" stroke-width="2"/><line x1="30" y1="18" x2="30" y2="30" stroke="var(--mark-stroke)" stroke-width="2"/><line x1="36" y1="21" x2="36" y2="27" stroke="var(--mark-stroke)" stroke-width="2"/></svg></div>
+      <div class="symbol-code">SK.01</div>
+      <div class="symbol-name">voice.md</div>
+      <div class="symbol-desc">Your voice profile — tone, phrases, perspective. Currently placeholder.</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><rect x="6" y="6" width="36" height="36" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><rect x="14" y="14" width="20" height="20" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><rect x="20" y="20" width="8" height="8" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">SK.02</div>
+      <div class="symbol-name">brand-guidelines-skill.md</div>
+      <div class="symbol-desc">Design style — template selection, layout rules, visual identity specs</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><polyline points="8,36 16,28 24,32 32,18 40,12" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="8" cy="36" r="2" fill="var(--mark-stroke)"/><circle cx="16" cy="28" r="2" fill="var(--mark-stroke)"/><circle cx="24" cy="32" r="2" fill="var(--mark-stroke)"/><circle cx="32" cy="18" r="2" fill="var(--mark-stroke)"/><circle cx="40" cy="12" r="2" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">SK.03</div>
+      <div class="symbol-name">performance-patterns.md</div>
+      <div class="symbol-desc">Weekly direction from Marketing Director — what works, what to try, what to stop</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none" stroke-dasharray="4 4"/><line x1="16" y1="24" x2="32" y2="24" stroke="var(--mark-stroke)" stroke-width="1"/></svg></div>
+      <div class="symbol-code">SK.04</div>
+      <div class="symbol-name">boundaries.md</div>
+      <div class="symbol-desc">Content limits — topics and approaches that are off-limits</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="16" stroke="var(--mark-stroke)" stroke-width="1" fill="none"/><circle cx="24" cy="24" r="10" stroke="var(--mark-stroke)" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="4" fill="var(--mark-stroke)"/></svg></div>
+      <div class="symbol-code">SK.05</div>
+      <div class="symbol-name">niche.md</div>
+      <div class="symbol-desc">Audience definition, keyword clusters, competitive landscape for your niche</div>
+    </div>
+
+    <div class="symbol-card"><div class="badge live"></div>
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="12" y1="12" x2="36" y2="36" stroke="var(--mark-stroke)" stroke-width="2"/><line x1="36" y1="12" x2="12" y2="36" stroke="var(--mark-stroke)" stroke-width="2"/><circle cx="24" cy="24" r="14" stroke="var(--mark-stroke)" stroke-width="1" fill="none"/></svg></div>
+      <div class="symbol-code">SK.06</div>
+      <div class="symbol-name">quality-standards.md</div>
+      <div class="symbol-desc">Banned phrases that make content sound AI-generated</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- STATES                                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="category">
+  <div class="category-header">
+    <span class="category-title">States</span>
+    <span class="category-meta">ST.01 — ST.04 / System Status Indicators</span>
+  </div>
+  <p class="category-desc">Visual indicators for component status. Applied as overlays on any node in the architecture map. The accent green signals active — the only bright color in the system.</p>
+  <div class="symbol-grid">
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="6" fill="var(--accent-green)"/><line x1="34" y1="20" x2="40" y2="18" stroke="var(--accent-green)" stroke-width="1.5"/><line x1="34" y1="24" x2="42" y2="24" stroke="var(--accent-green)" stroke-width="1.5"/><line x1="34" y1="28" x2="40" y2="30" stroke="var(--accent-green)" stroke-width="1.5"/></svg></div>
+      <div class="symbol-code">ST.01</div>
+      <div class="symbol-name">Running</div>
+      <div class="symbol-desc">Agent actively executing</div>
+    </div>
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" stroke="var(--fg-dim)" stroke-width="1.5" fill="none"/></svg></div>
+      <div class="symbol-code">ST.02</div>
+      <div class="symbol-name">Idle</div>
+      <div class="symbol-desc">Waiting for scheduled trigger</div>
+    </div>
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" stroke="var(--accent-red)" stroke-width="1.5" fill="none"/><line x1="18" y1="18" x2="30" y2="30" stroke="var(--accent-red)" stroke-width="1.5"/><line x1="30" y1="18" x2="18" y2="30" stroke="var(--accent-red)" stroke-width="1.5"/></svg></div>
+      <div class="symbol-code">ST.03</div>
+      <div class="symbol-name">Failed</div>
+      <div class="symbol-desc">Error — check agent logs</div>
+    </div>
+
+    <div class="symbol-card">
+      <div class="symbol-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="8" fill="var(--mark-stroke)"/><circle cx="24" cy="24" r="13" stroke="var(--accent-green)" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="17" stroke="var(--accent-green)" stroke-width="1" fill="none" stroke-opacity="0.4"/></svg></div>
+      <div class="symbol-code">ST.04</div>
+      <div class="symbol-name">Human Needed</div>
+      <div class="symbol-desc">Awaiting human decision</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- DESIGN RULES                                   -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="rules-section">
+  <div class="section-header" style="margin-bottom:0;">
+    <div class="category-title">Design Rules</div>
+    <span class="category-meta">Governing constraints for all marks</span>
+  </div>
+  <div class="rules-grid">
+    <div class="rule-card">
+      <div class="rule-label">Grid</div>
+      <div class="rule-value">48 × 48px<br>All marks fit this square</div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Stroke</div>
+      <div class="rule-value">1.5px primary<br>1px secondary</div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Primitives</div>
+      <div class="rule-value">Dots, lines, circles, squares. No freeform curves.</div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Fills</div>
+      <div class="rule-value">Humans = filled solid<br>Agents = outlines only</div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Background</div>
+      <div class="rule-value">
+        <div class="rule-swatch"><div class="swatch" style="background:#F0EBE0;"></div><span class="swatch-label">#F0EBE0</span></div>
+      </div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Foreground</div>
+      <div class="rule-value">
+        <div class="rule-swatch"><div class="swatch" style="background:#1A1A1A;"></div><span class="swatch-label">#1A1A1A</span></div>
+      </div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Accent — Active</div>
+      <div class="rule-value">
+        <div class="rule-swatch"><div class="swatch" style="background:#5CBF3A;"></div><span class="swatch-label">#5CBF3A</span></div>
+      </div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Accent — Error</div>
+      <div class="rule-value">
+        <div class="rule-swatch"><div class="swatch" style="background:#C44B28;"></div><span class="swatch-label">#C44B28</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- FOOTER                                         -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="footer">
+  <span class="footer-text">BrandCrew / Symbol System V.02</span>
+  <span class="footer-text">25 Marks / 8 Categories</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PARTICLE STRIP ANIMATION                       -->
+<!-- ═══════════════════════════════════════════════ -->
+<script>
+(function() {
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles = [];
+  const count = 400;
+
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0003,
+      vy: (Math.random() - 0.5) * 0.0008,
+      size: Math.random() * 1.5 + 0.5,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+
+  let time = 0;
+
+  function draw() {
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Subtle background tint
+    ctx.fillStyle = '#E8E3D8';
+    ctx.fillRect(0, 0, w, h);
+
+    for (let i = 0; i < count; i++) {
+      const p = particles[i];
+
+      // Wave attraction toward center band
+      const centerY = 0.5;
+      const distFromCenter = Math.abs(p.y - centerY);
+      const waveInfluence = Math.max(0, 1 - distFromCenter * 3);
+
+      // Oscillate x based on wave
+      const waveX = Math.sin(p.x * 12 + time * 1.5 + p.phase) * 0.008 * waveInfluence;
+      const waveY = Math.cos(p.x * 8 + time * 0.8 + p.phase) * 0.004 * waveInfluence;
+
+      p.x += p.vx + waveX;
+      p.y += p.vy + waveY;
+
+      // Pull toward center band
+      if (waveInfluence > 0.3) {
+        p.y += (centerY - p.y) * 0.001;
+      }
+
+      // Wrap
+      if (p.x < 0) p.x = 1;
+      if (p.x > 1) p.x = 0;
+      if (p.y < 0) p.y = 1;
+      if (p.y > 1) p.y = 0;
+
+      // Draw
+      const alpha = 0.1 + waveInfluence * 0.5;
+      const size = p.size * (1 + waveInfluence * 1.5);
+
+      ctx.beginPath();
+      ctx.arc(p.x * w, p.y * h, size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(26, 26, 26, ${alpha})`;
+      ctx.fill();
+    }
+
+    time += 0.02;
+    requestAnimationFrame(draw);
+  }
+
+  draw();
+})();
+</script>
+
+</body>
+</html>

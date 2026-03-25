@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — File System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --border: #D6D1C8;
+    --border-light: #C5BFB6;
+    --fg: #1A1A1A;
+    --fg-dim: #A09A93;
+    --fg-mid: #6B6560;
+    --green: #5CBF3A;
+    --green-dim: rgba(92,191,58,0.1);
+    --red: #C44B28;
+    --blue: #4A9FD9;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .nav { position: fixed; top: 0; left: 0; width: 100%; padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .nav-brand { font-size: 10px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: var(--fg-dim); }
+  .nav-tabs { display: flex; gap: 0; }
+  .nav-tab { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; border: 1px solid var(--border); border-right: none; background: transparent; color: var(--fg-dim); cursor: pointer; transition: all 0.2s ease; }
+  .nav-tab:last-child { border-right: 1px solid var(--border); }
+  .nav-tab:hover { color: var(--fg); }
+  .nav-tab.active { background: var(--fg); color: var(--bg); }
+  .nav-version { font-size: 9px; font-weight: 300; color: var(--fg-dim); letter-spacing: 1.5px; }
+  .page { margin-top: 44px; display: flex; height: calc(100vh - 44px); }
+  .tree-panel { width: 420px; border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+  .tree-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .tree-title { font-size: 9px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); }
+  .tree-stats { font-size: 9px; color: var(--fg-dim); letter-spacing: 1px; }
+  .tree-stats span { color: var(--green); font-weight: 500; }
+  .tree-item { display: flex; align-items: center; padding: 5px 20px; cursor: pointer; transition: background 0.15s ease; border-bottom: 1px solid transparent; position: relative; }
+  .tree-item:hover { background: var(--bg-alt); }
+  .tree-item.selected { background: var(--green-dim); border-bottom-color: var(--border); }
+  .tree-item.folder .tree-icon { color: var(--green); }
+  .tree-item.file .tree-icon { color: var(--fg-dim); }
+  .tree-icon { width: 16px; font-size: 10px; flex-shrink: 0; margin-right: 8px; }
+  .tree-name { font-size: 11px; font-weight: 400; flex-grow: 1; }
+  .tree-name.folder-name { color: var(--fg); }
+  .tree-name.file-name { color: var(--fg-mid); }
+  .tree-size { font-size: 9px; color: var(--fg-dim); margin-left: 12px; flex-shrink: 0; }
+  .tree-badge { font-size: 7px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; padding: 1px 6px; margin-left: 8px; flex-shrink: 0; }
+  .tree-badge.skill { border: 1px solid var(--green); color: var(--green); }
+  .tree-badge.prd { border: 1px solid var(--blue); color: var(--blue); }
+  .tree-badge.config { border: 1px solid var(--fg-dim); color: var(--fg-dim); }
+  .tree-badge.placeholder { border: 1px solid var(--red); color: var(--red); }
+  .tree-badge.runner { border: 1px solid var(--fg-mid); color: var(--fg-mid); }
+  .tree-item[data-depth="1"] { padding-left: 36px; }
+  .tree-item[data-depth="2"] { padding-left: 52px; }
+  .tree-item[data-depth="3"] { padding-left: 68px; }
+  .tree-children { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+  .tree-children.open { max-height: 2000px; }
+  .detail-panel { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .detail-header { padding: 20px 32px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 10; }
+  .detail-path { font-size: 9px; color: var(--fg-dim); letter-spacing: 1.5px; margin-bottom: 8px; }
+  .detail-filename { font-size: 16px; font-weight: 500; color: var(--fg); letter-spacing: 0.5px; }
+  .detail-meta { display: flex; gap: 24px; margin-top: 8px; }
+  .detail-meta-item { font-size: 9px; color: var(--fg-dim); letter-spacing: 1px; }
+  .detail-meta-item span { color: var(--fg); font-weight: 500; }
+  .detail-body { padding: 24px 32px; flex-grow: 1; }
+  .detail-section { margin-bottom: 24px; }
+  .detail-section-title { font-size: 9px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--fg-dim); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .detail-desc { font-size: 10px; font-weight: 300; line-height: 1.8; color: var(--fg-mid); }
+  .detail-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .detail-tag { font-size: 9px; font-weight: 400; letter-spacing: 0.5px; padding: 3px 10px; border: 1px solid var(--border-light); color: var(--fg-mid); }
+  .detail-tag.green { border-color: var(--green); color: var(--green); }
+  .detail-empty { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--fg-dim); gap: 12px; }
+  .detail-empty-icon { font-size: 32px; opacity: 0.3; }
+  .detail-empty-text { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; }
+  #bgCanvas { position: fixed; top: 44px; left: 0; width: 100%; height: calc(100vh - 44px); z-index: -1; pointer-events: none; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div class="page">
+  <div class="tree-panel">
+    <div class="tree-header">
+      <div class="tree-title">brandcrew/</div>
+      <div class="tree-stats"><span>~80</span> files</div>
+    </div>
+    <div id="fileTree"></div>
+  </div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-empty">
+      <div class="detail-empty-icon">◇</div>
+      <div class="detail-empty-text">Select a file to inspect</div>
+    </div>
+  </div>
+</div>
+<script>
+const tree={name:'brandcrew',type:'folder',children:[{name:'CLAUDE.md',type:'file',size:'11KB',badge:'config',desc:'Master project context. Agent roster, critical rules, stack details, pipeline sequence. Every session starts by reading this file.',tags:['Master Context','Session Start','Agent Roster']},{name:'STATUS.md',type:'file',size:'12KB',badge:'config',desc:"Session tracker. What's done, what's next, what's blocked. Updated at the end of every work session. The system's memory between sessions.",tags:['Session Tracker','Status','Blockers']},{name:'PRD.md',type:'file',size:'12KB',badge:'prd',desc:'Product Requirements Document. The original vision, goals, user stories, and success criteria for the entire system.',tags:['PRD','Requirements','Vision']},{name:'BUILD_LOG.md',type:'file',size:'10KB',badge:'config',desc:'Chronological build log. What was built in each session, decisions made, problems solved.',tags:['Build Log','History']},{name:'README.md',type:'file',size:'225B',badge:null,desc:'Repository readme. Minimal \u2014 the real documentation lives in CLAUDE.md and STATUS.md.',tags:[]},{name:'.gitignore',type:'file',size:'193B',badge:null,desc:'Git ignore rules. Excludes .env, logs, generated images, node_modules.',tags:[]},{name:'agents/',type:'folder',children:[{name:'research/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'~6KB',badge:'skill',desc:'Niche Content Researcher instructions. Defines how to scan trending topics, what sources to check, output format for research_topics table.',tags:['FT.01','Researcher','Skill']},{name:'run.sh',type:'file',size:'~5KB',badge:'runner',desc:'Cron runner script. Launches Claude Code with the research prompt. Lock file prevents overlapping runs.',tags:['Runner','Cron','Bash']}]},{name:'marketing_director/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'10KB',badge:'skill',desc:'Marketing Director instructions. How to synthesize research, analytics, feedback, and agent logs into weekly direction. Includes design feedback analysis rules.',tags:['FT.02','Director','Skill','Feedback Loop']},{name:'run.sh',type:'file',size:'5KB',badge:'runner',desc:'Cron runner. Queries all Supabase tables, loads all shared files including brand-guidelines-skill.md. 30 max turns.',tags:['Runner','Cron']}]},{name:'ideation/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'6KB',badge:'skill',desc:'Content Strategist instructions. Generates 10 distinct ideas from research topics. Each must be different type and different topic. Sends to Telegram for multi-select.',tags:['FT.03','Strategist','Skill']},{name:'run.sh',type:'file',size:'5KB',badge:'runner',desc:'Cron runner. Sets bot_state.json to AWAITING_IDEA_SELECTION after sending ideas. Critical for multi-select reply routing.',tags:['Runner','Cron','Bot State']}]},{name:'writer/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'~7KB',badge:'skill',desc:"Content Creator instructions. Post structure, voice rules, hook formulas. Reads performance-patterns.md for Marketing Director's weekly direction.",tags:['FT.04','Writer','Skill']},{name:'run.sh',type:'file',size:'9KB',badge:'runner',desc:'Runner with pre-extraction. Pulls approved idea from Supabase BEFORE launching Claude Code and hard-injects it into the prompt. Prevents drift.',tags:['Runner','Idea Injection','Auto-chain']},{name:'references/',type:'folder',children:[{name:'post-examples.md',type:'file',size:'~8KB',badge:null,desc:'Annotated examples of high-performing LinkedIn posts in your niche. Hook types, structure patterns, engagement drivers.',tags:['Reference','Examples']}]}]},{name:'quality/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'~7KB',badge:'skill',desc:'Content Editor instructions. 5-dimension scoring rubric (voice, usefulness, specificity, hook, slop). Pass threshold 35/50. Retry logic.',tags:['FT.05','Editor','Skill','Scoring']},{name:'run.sh',type:'file',size:'6KB',badge:'runner',desc:'Runner. On PASS, sends text to Telegram and sets bot state to AWAITING_DRAFT_APPROVAL. On FAIL, returns to writer with feedback.',tags:['Runner','Quality Gate']},{name:'references/',type:'folder',children:[{name:'scoring-rubric.md',type:'file',size:'~3KB',badge:null,desc:"Detailed scoring rubric. What a 2/10 vs 8/10 looks like for each dimension. Calibrates the editor's judgment.",tags:['Reference','Rubric']}]}]},{name:'designer/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'~8KB',badge:'skill',desc:'Social Media Designer instructions. Template selection logic, content-to-layout mapping, brand consistency rules. Renders designs via HTML templates + Playwright.',tags:['FT.06','Designer','Skill','Templates']},{name:'run.sh',type:'file',size:'8KB',badge:'runner',desc:'Runner. Two Claude Code calls \u2014 first selects template and populates content, second renders via Playwright. Explicit draft_id prevents stale pickup.',tags:['Runner','Two-phase','Draft ID']}]},{name:'repurposer/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'~4KB',badge:'skill',desc:'Content Repurposer instructions. Adapts approved LinkedIn posts into platform-native formats for X, newsletters, and blog. Maintains voice consistency across channels.',tags:['FT.07','Repurposer','Skill','Multi-platform']},{name:'run.sh',type:'file',size:'~5KB',badge:'runner',desc:'Runner. Triggers after draft approval. Reads approved content from Supabase and generates adapted versions for configured platforms.',tags:['Runner','Cron','Auto-chain']}]},{name:'ip_extractor/',type:'folder',children:[{name:'SKILL.md',type:'file',size:'~5KB',badge:'skill',desc:'IP Extractor instructions. Interactive Cowork agent that interviews you to extract stories, frameworks, and operational expertise.',tags:['IA.01','Interactive','Cowork']}]},{name:'part-time/',type:'folder',children:[{name:'HOW_TO_RUN.md',type:'file',size:'~3KB',badge:'config',desc:'Instructions for running part-time agent teams on local machine. Agent Teams experimental flag, token cost warnings.',tags:['Part-Time','Instructions']}]}]},{name:'shared/',type:'folder',children:[{name:'voice.md',type:'file',size:'1.3KB',badge:'placeholder',desc:'Your voice profile. PLACEHOLDER \u2014 voice definition session is the critical blocker. Every writing agent loads this before drafting.',tags:['SK.01','Voice','BLOCKER']},{name:'brand-guidelines-skill.md',type:'file',size:'18KB',badge:'skill',desc:'Design style direction. Template selection rules, layout requirements, visual identity specs. Marketing Director can update based on feedback.',tags:['SK.02','Design Style','Self-Improving']},{name:'performance-patterns.md',type:'file',size:'2.6KB',badge:'skill',desc:"Weekly direction from Marketing Director. Content type priorities, what's working, what to stop, operator preferences, design direction. Read by Strategist and Writer.",tags:['SK.03','Direction','Self-Improving']},{name:'boundaries.md',type:'file',size:'1.2KB',badge:null,desc:'Content limits. Topics and approaches that are off-limits regardless of how well they might perform.',tags:['SK.04','Limits']},{name:'niche.md',type:'file',size:'2KB',badge:null,desc:'Niche context. Audience definition, keyword clusters, competitive landscape for your configured industry.',tags:['SK.05','Niche']},{name:'quality-standards.md',type:'file',size:'1.9KB',badge:null,desc:'Banned phrases filter. Every phrase that makes content sound AI-generated. Writer and Editor both check line by line.',tags:['SK.06','Filter']},{name:'visual_identity.md',type:'file',size:'6.2KB',badge:null,desc:'Visual identity specs. Colors, typography, composition rules for your LinkedIn brand.',tags:['Visual','Brand']},{name:'audience-profile.md',type:'file',size:'724B',badge:null,desc:'Target audience profile. Who reads your content, what they care about, what makes them engage.',tags:['Audience']},{name:'watchlist.md',type:'file',size:'9.3KB',badge:null,desc:'Top creators in your niche. Who has audience, what content they produce.',tags:['Watchlist','PT.01 Output']},{name:'telegram-security.md',type:'file',size:'2.5KB',badge:null,desc:'Telegram bot security rules. Whitelist enforcement, silent ignore for unknown IDs, no exceptions.',tags:['Security']},{name:'platforms/',type:'folder',children:[{name:'linkedin-playbook.md',type:'file',size:'~4KB',badge:null,desc:'LinkedIn platform rules. Character limits, format benchmarks, posting times, what content types get reach.',tags:['Platform','LinkedIn']}]}]},{name:'docs/',type:'folder',children:[{name:'RESEARCH_BRIEF.md',type:'file',size:'12KB',badge:null,desc:'Master research report from part-time Lead Agent. Foundational niche positioning, competitive analysis, content opportunities. Read by Marketing Director.',tags:['PT.04 Output','Research']},{name:'content-gaps.md',type:'file',size:'6.6KB',badge:null,desc:'White space analysis. What content the niche is missing. Updated by Marketing Director when gaps change.',tags:['Gaps','Strategy']},{name:'cross-niche-formats.md',type:'file',size:'12KB',badge:null,desc:'Formats from outside the niche worth transplanting. Written by PT.03 Cross-Market Researcher. Read by Strategist.',tags:['PT.03 Output','Formats']},{name:'SKILL_IMPLEMENTATION_FINDINGS.md',type:'file',size:'8.1KB',badge:null,desc:'Research findings on how to write proper SKILL.md files. Anthropic best practices, two-Claude testing method, context management.',tags:['Research','Best Practices']},{name:'SYSTEM_BLUEPRINT.md',type:'file',size:'24KB',badge:'prd',desc:'Full system blueprint. Architecture decisions, agent design patterns, data flow, security model.',tags:['Blueprint','Architecture']},{name:'FUTURE_IDEAS.md',type:'file',size:'8.6KB',badge:null,desc:'Future feature ideas. Video integration, analytics dashboards, token monitoring, multi-platform expansion.',tags:['Future','Ideas']}]},{name:'templates/',type:'folder',children:[{name:'quote.html',type:'file',size:'~3KB',badge:null,desc:'Quote template. Bold statement with attribution, branded footer. 1080\u00d71350 output.',tags:['Template','HTML']},{name:'stat.html',type:'file',size:'~3KB',badge:null,desc:'Statistic highlight template. Large number with context and source. 1080\u00d71350 output.',tags:['Template','HTML']},{name:'list.html',type:'file',size:'~3KB',badge:null,desc:'List template. Numbered or bulleted key points. 1080\u00d71350 output.',tags:['Template','HTML']},{name:'story.html',type:'file',size:'~3KB',badge:null,desc:'Story template. Narrative hook with visual emphasis. 1080\u00d71350 output.',tags:['Template','HTML']},{name:'cta.html',type:'file',size:'~3KB',badge:null,desc:'Call-to-action template. Engagement prompt with clear action. 1080\u00d71350 output.',tags:['Template','HTML']},{name:'tips.html',type:'file',size:'~3KB',badge:null,desc:'Tips template. Quick actionable advice with icons. 1080\u00d71350 output.',tags:['Template','HTML']}]},{name:'scripts/',type:'folder',children:[{name:'generate_design.py',type:'file',size:'~4KB',badge:'runner',desc:'Design generation script. Loads template key from Supabase, populates HTML template with content, renders to image via Playwright.',tags:['Python','Playwright','Design']}]},{name:'telegram/',type:'folder',children:[{name:'bot.py',type:'file',size:'42KB',badge:'runner',desc:'Telegram bot. State machine, command routing, whitelist security, agent triggering. 12 commands. Handles idea multi-select, draft approval, design feedback, strategic direction.',tags:['Python','Bot','State Machine','12 Commands']}]},{name:'supabase/',type:'folder',children:[{name:'schema.sql',type:'file',size:'~3KB',badge:'config',desc:'Database schema definition. 5 tables: research_topics, content_ideas, content_drafts, agent_logs, content_templates.',tags:['SQL','Schema']}]}]};
+const treeEl=document.getElementById('fileTree');const detailEl=document.getElementById('detailPanel');
+function renderTree(node,depth=0,container=treeEl){if(node.type==='folder'&&node.children){const item=document.createElement('div');item.className='tree-item folder';item.dataset.depth=depth;item.innerHTML=`<span class="tree-icon">▸</span><span class="tree-name folder-name">${node.name}</span><span class="tree-size">${node.children.length} items</span>`;const childContainer=document.createElement('div');childContainer.className='tree-children';item.addEventListener('click',(e)=>{e.stopPropagation();const isOpen=childContainer.classList.toggle('open');item.querySelector('.tree-icon').textContent=isOpen?'▾':'▸';});container.appendChild(item);container.appendChild(childContainer);node.children.forEach(child=>renderTree(child,depth+1,childContainer));}else{const item=document.createElement('div');item.className='tree-item file';item.dataset.depth=depth;let badgeHtml='';if(node.badge==='skill')badgeHtml='<span class="tree-badge skill">SKILL</span>';else if(node.badge==='prd')badgeHtml='<span class="tree-badge prd">PRD</span>';else if(node.badge==='config')badgeHtml='<span class="tree-badge config">CONFIG</span>';else if(node.badge==='placeholder')badgeHtml='<span class="tree-badge placeholder">PLACEHOLDER</span>';else if(node.badge==='runner')badgeHtml='<span class="tree-badge runner">RUNNER</span>';item.innerHTML=`<span class="tree-icon">◇</span><span class="tree-name file-name">${node.name}</span>${badgeHtml}<span class="tree-size">${node.size||''}</span>`;item.addEventListener('click',(e)=>{e.stopPropagation();document.querySelectorAll('.tree-item.selected').forEach(el=>el.classList.remove('selected'));item.classList.add('selected');showDetail(node);});container.appendChild(item);}}
+function showDetail(node){let tagsHtml='';if(node.tags&&node.tags.length){tagsHtml=`<div class="detail-section"><div class="detail-section-title">Tags</div><div class="detail-tags">${node.tags.map(t=>{const isGreen=t.includes('FT.')||t.includes('SK.')||t.includes('Self-Improving')||t==='BLOCKER';return`<span class="detail-tag ${isGreen?'green':''}">${t}</span>`;}).join('')}</div></div>`;}detailEl.innerHTML=`<div class="detail-header"><div class="detail-path">brandcrew/</div><div class="detail-filename">${node.name}</div><div class="detail-meta"><div class="detail-meta-item">SIZE: <span>${node.size||'\u2014'}</span></div><div class="detail-meta-item">TYPE: <span>${node.badge?node.badge.toUpperCase():'FILE'}</span></div></div></div><div class="detail-body"><div class="detail-section"><div class="detail-section-title">Description</div><div class="detail-desc">${node.desc||'No description available.'}</div></div>${tagsHtml}</div>`;}
+tree.children.forEach(child=>renderTree(child,0));
+(function(){const c=document.getElementById('bgCanvas');const ctx=c.getContext('2d');function resize(){c.width=window.innerWidth;c.height=window.innerHeight-44;}resize();window.addEventListener('resize',resize);const particles=[];for(let i=0;i<60;i++){particles.push({x:Math.random(),y:Math.random(),vx:(Math.random()-0.5)*0.0001,vy:(Math.random()-0.5)*0.0001,size:Math.random()*0.8+0.2,phase:Math.random()*Math.PI*2});}let t=0;function draw(){const w=c.width,h=c.height;ctx.clearRect(0,0,w,h);for(const p of particles){p.x+=p.vx+Math.sin(t*0.3+p.phase)*0.00002;p.y+=p.vy+Math.cos(t*0.2+p.phase)*0.00002;if(p.x<0)p.x=1;if(p.x>1)p.x=0;if(p.y<0)p.y=1;if(p.y>1)p.y=0;ctx.beginPath();ctx.arc(p.x*w,p.y*h,p.size,0,Math.PI*2);ctx.fillStyle='rgba(26,26,26,0.03)';ctx.fill();}t+=0.02;requestAnimationFrame(draw);}draw();})();
+</script>
+</body>
+</html>

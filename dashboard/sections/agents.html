@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — Agent Roster</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --bg-card: #FAF7F2;
+    --fg: #1A1A1A;
+    --fg-secondary: #6B6560;
+    --fg-dim: #A09A93;
+    --accent-green: #5CBF3A;
+    --accent-red: #C44B28;
+    --mark-stroke: #1A1A1A;
+    --connection: #C5BFB6;
+    --border: #D6D1C8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO ────────────────────────────────────── */
+  .hero { padding: 60px 60px 40px; }
+  .hero-label {
+    font-size: 9px; font-weight: 500; letter-spacing: 4px;
+    text-transform: uppercase; color: var(--fg-dim); margin-bottom: 16px;
+  }
+  .hero-title { font-size: 28px; font-weight: 300; letter-spacing: -0.5px; line-height: 1.3; margin-bottom: 16px; }
+  .hero-title strong { font-weight: 600; }
+  .hero-desc {
+    font-size: 11px; font-weight: 300; line-height: 1.8;
+    color: var(--fg-secondary); max-width: 620px;
+  }
+  .hero-meta { display: flex; gap: 32px; margin-top: 24px; }
+  .hero-meta-item { font-size: 9px; font-weight: 400; letter-spacing: 1.5px; color: var(--fg-dim); }
+  .hero-meta-item span { color: var(--fg); font-weight: 500; }
+
+  /* ── PARTICLE STRIP ──────────────────────────── */
+  .particle-strip { width: 100%; height: 60px; position: relative; overflow: hidden; }
+  #particleCanvas { width: 100%; height: 100%; display: block; }
+
+  /* ── FILTER BAR ──────────────────────────────── */
+  .filter-bar {
+    padding: 20px 60px; display: flex; gap: 8px; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-label {
+    font-size: 9px; font-weight: 500; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--fg-dim); margin-right: 8px;
+  }
+  .filter-btn {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 400;
+    letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 12px;
+    border: 1px solid var(--border); background: transparent; color: var(--fg-dim);
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .filter-btn:hover { color: var(--fg); border-color: var(--fg); }
+  .filter-btn.active { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+  /* ── CATEGORY DIVIDER ────────────────────────── */
+  .cat-divider {
+    padding: 32px 60px 16px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .cat-divider-title {
+    font-size: 10px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase;
+  }
+  .cat-divider-count {
+    font-size: 9px; font-weight: 300; color: var(--fg-dim); letter-spacing: 1.5px;
+  }
+
+  /* ── AGENT CARD ──────────────────────────────── */
+  .agent-grid {
+    padding: 0 60px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .agent-card {
+    border: 1px solid var(--border);
+    background: transparent;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    transition: background 0.2s ease;
+  }
+
+  .agent-card:hover { background: var(--bg-card); }
+  .agent-card + .agent-card { border-top: none; }
+
+  .agent-mark-col {
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    border-right: 1px solid var(--border);
+  }
+
+  .agent-mark { width: 48px; height: 48px; }
+  .agent-mark svg { width: 48px; height: 48px; }
+
+  .agent-code {
+    font-size: 9px; font-weight: 500; letter-spacing: 2.5px; color: var(--fg-dim);
+  }
+
+  .agent-status-dot {
+    width: 7px; height: 7px; border-radius: 50%; margin-top: 4px;
+  }
+  .agent-status-dot.active { background: var(--accent-green); }
+  .agent-status-dot.idle { background: var(--fg-dim); }
+  .agent-status-dot.blocked { background: var(--accent-red); }
+
+  .agent-details { padding: 24px; }
+
+  .agent-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 8px;
+  }
+
+  .agent-name { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; }
+
+  .agent-schedule {
+    font-size: 9px; font-weight: 400; letter-spacing: 1.5px; color: var(--fg-dim);
+  }
+
+  .agent-desc {
+    font-size: 10px; font-weight: 300; line-height: 1.7;
+    color: var(--fg-secondary); margin-bottom: 16px; max-width: 700px;
+  }
+
+  .agent-data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .agent-data-label {
+    font-size: 8px; font-weight: 500; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--fg-dim); margin-bottom: 6px;
+  }
+
+  .agent-data-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .agent-tag {
+    font-size: 9px; font-weight: 400; letter-spacing: 0.5px;
+    padding: 3px 8px; border: 1px solid var(--border);
+    transition: border-color 0.2s ease;
+  }
+
+  .agent-card:hover .agent-tag { border-color: var(--connection); }
+
+  .agent-role-badge {
+    font-size: 8px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+    padding: 2px 8px; border: 1px solid var(--accent-green); color: var(--accent-green);
+    display: inline-block; margin-left: 12px;
+  }
+
+  .agent-role-badge.human { border-color: var(--fg); color: var(--fg); }
+  .agent-role-badge.planned { border-color: var(--fg-dim); color: var(--fg-dim); }
+
+  /* ── FOOTER ──────────────────────────────────── */
+  .footer {
+    padding: 32px 60px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between;
+  }
+  .footer-text {
+    font-size: 9px; font-weight: 300; color: var(--fg-dim);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-label">System / Agent Roster</div>
+  <h1 class="hero-title"><strong>Agent Roster</strong></h1>
+  <p class="hero-desc">
+    Every agent in the system — what it does, what it reads, what it writes, and when it runs. Agents communicate through shared files and database, never directly. The files are the communication layer.
+  </p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">FULL-TIME: <span>7</span></div>
+    <div class="hero-meta-item">PART-TIME: <span>4</span></div>
+    <div class="hero-meta-item">INTERACTIVE: <span>1</span></div>
+  </div>
+</section>
+
+<!-- PARTICLE STRIP -->
+<div class="particle-strip"><canvas id="particleCanvas"></canvas></div>
+
+<!-- FILTER -->
+<div class="filter-bar">
+  <span class="filter-label">Filter</span>
+  <button class="filter-btn active" onclick="filterAgents('all')">All</button>
+  <button class="filter-btn" onclick="filterAgents('ft')">Full-Time</button>
+  <button class="filter-btn" onclick="filterAgents('pt')">Part-Time</button>
+  <button class="filter-btn" onclick="filterAgents('hu')">Human</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- FULL-TIME AGENTS                               -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="cat-divider" data-cat="ft">
+  <div class="cat-divider-title">Full-Time Agents</div>
+  <div class="cat-divider-count">7 agents / VPS Cron / Always On</div>
+</div>
+<div class="agent-grid" data-cat="ft">
+
+  <div class="agent-card" data-cat="ft">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="3" fill="#1A1A1A"/><circle cx="24" cy="24" r="10" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="18" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="24" y1="24" x2="24" y2="6" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="agent-code">FT.01</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Niche Content Researcher</span>
+        <span class="agent-schedule">SUNDAY</span>
+      </div>
+      <div class="agent-desc">Scans your configured niche for what's trending this week. Saves 5-10 fresh topics to the database with relevance scores. This is the raw signal that feeds everything downstream. Keywords and sources come from config/niche.md.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">Web sources</span><span class="agent-tag">niche.md</span><span class="agent-tag">niche-keywords.md</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">research_topics</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="ft">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="5" fill="#1A1A1A"/><line x1="8" y1="10" x2="20" y2="21" stroke="#1A1A1A" stroke-width="1.5"/><line x1="40" y1="10" x2="28" y2="21" stroke="#1A1A1A" stroke-width="1.5"/><line x1="8" y1="38" x2="20" y2="27" stroke="#1A1A1A" stroke-width="1.5"/><line x1="40" y1="38" x2="28" y2="27" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="6" x2="24" y2="19" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="8" cy="10" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="10" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="8" cy="38" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="40" cy="38" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="6" r="2" fill="none" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="agent-code">FT.02</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Marketing Director</span>
+        <span class="agent-schedule">SUNDAY</span>
+      </div>
+      <div class="agent-desc">The brain. Reads everything — fresh research, past draft scores, operator feedback via Telegram, agent failures, image quality notes — and synthesizes it all into specific direction for this week. The only agent that connects past performance to future strategy.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">research_topics</span><span class="agent-tag">content_drafts</span><span class="agent-tag">agent_logs</span><span class="agent-tag">All operator feedback</span><span class="agent-tag">content-gaps.md</span><span class="agent-tag">cross-niche-formats.md</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">performance-patterns.md</span><span class="agent-tag">brand-guidelines.md</span><span class="agent-tag">content-gaps.md</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="ft">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="10" cy="24" r="3" fill="#1A1A1A"/><line x1="13" y1="24" x2="22" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="22" cy="24" r="2" fill="#1A1A1A"/><line x1="24" y1="23" x2="36" y2="10" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="24" x2="38" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><line x1="24" y1="25" x2="36" y2="38" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="37" cy="10" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="39" cy="24" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="37" cy="38" r="3" fill="none" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="agent-code">FT.03</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Content Strategist</span>
+        <span class="agent-schedule">SUNDAY</span>
+      </div>
+      <div class="agent-desc">Generates 10 content ideas with relevance scores. Each idea is derived from research topics and the Marketing Director's weekly direction. Sends all 10 to Telegram for multi-select. You pick 5 (or more), reply DONE to lock the week.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">research_topics</span><span class="agent-tag">performance-patterns.md</span><span class="agent-tag">content-gaps.md</span><span class="agent-tag">cross-niche-formats.md</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">content_ideas &#xd7; 10</span><span class="agent-tag">Telegram message</span><span class="agent-tag">bot_state.json</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="ft">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="12" y1="36" x2="36" y2="12" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="36" cy="12" r="3" fill="#1A1A1A"/><line x1="12" y1="36" x2="20" y2="36" stroke="#1A1A1A" stroke-width="1"/><line x1="12" y1="36" x2="12" y2="28" stroke="#1A1A1A" stroke-width="1"/></svg></div>
+      <div class="agent-code">FT.04</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Content Creator</span>
+        <span class="agent-schedule">MON–FRI DAILY</span>
+      </div>
+      <div class="agent-desc">Writes the post in your configured voice. The approved idea is injected into the prompt so the agent can't drift. Loads voice profile, anti-slop filter, platform rules, and the Marketing Director's weekly direction. Picks the oldest approved idea (FIFO). Auto-chains to Editor on completion.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">Approved idea (injected)</span><span class="agent-tag">voice.md</span><span class="agent-tag">niche.md</span><span class="agent-tag">quality-standards.md</span><span class="agent-tag">performance-patterns.md</span><span class="agent-tag">linkedin-playbook.md</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">content_drafts</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="ft">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="6" y1="24" x2="16" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><rect x="16" y="10" width="16" height="28" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="32" y1="24" x2="42" y2="24" stroke="#1A1A1A" stroke-width="1.5"/><circle cx="24" cy="18" r="2" fill="#1A1A1A"/><line x1="22" y1="30" x2="26" y2="30" stroke="#1A1A1A" stroke-width="1.5"/></svg></div>
+      <div class="agent-code">FT.05</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Content Editor</span>
+        <span class="agent-schedule">AUTO-CHAINS FROM WRITER</span>
+      </div>
+      <div class="agent-desc">Scores drafts on 5 dimensions — voice match, genuine usefulness, specificity, hook quality, and slop filter. Each scored 0-10. Pass threshold is 35/50. On pass, sends full post text + score to Telegram. On fail, returns to Writer with specific feedback. Up to 2 retries before escalation.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">content_drafts</span><span class="agent-tag">quality-standards.md</span><span class="agent-tag">voice.md</span><span class="agent-tag">scoring-rubric.md</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">quality_score</span><span class="agent-tag">Telegram message</span><span class="agent-tag">bot_state.json</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="ft">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><rect x="14" y="14" width="20" height="20" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-dasharray="2 3"/><circle cx="24" cy="24" r="4" fill="#1A1A1A"/></svg></div>
+      <div class="agent-code">FT.06</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Social Media Designer</span>
+        <span class="agent-schedule">AFTER HUMAN APPROVE</span>
+      </div>
+      <div class="agent-desc">Reads the approved draft, picks the best HTML template type, fills in content variables, and renders a branded JPG image via Playwright at 1080&#xd7;1350. Six template types available. Zero API cost. Delivers the image to Telegram for approval. Supports /regenerate_image with feedback.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">Approved draft (explicit ID)</span><span class="agent-tag">brand-guidelines.md</span><span class="agent-tag">templates/*.html</span><span class="agent-tag">themes/default.json</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">template_name</span><span class="agent-tag">template_vars</span><span class="agent-tag">image_url</span><span class="agent-tag">Telegram photo</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="ft">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><path d="M12,24 L18,14 L24,28 L30,18 L36,24" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="6" y1="38" x2="42" y2="38" stroke="#1A1A1A" stroke-width="1"/><line x1="12" y1="24" x2="12" y2="38" stroke="#1A1A1A" stroke-width="0.5" stroke-dasharray="2 2"/><line x1="36" y1="24" x2="36" y2="38" stroke="#1A1A1A" stroke-width="0.5" stroke-dasharray="2 2"/></svg></div>
+      <div class="agent-code">FT.07</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Content Repurposer</span>
+        <span class="agent-schedule">AFTER LINKEDIN POST</span>
+      </div>
+      <div class="agent-desc">Repurposes published LinkedIn posts to other platforms — X/Twitter threads, Substack newsletter drafts, TikTok slide concepts. Each platform version follows platform-specific playbooks. Triggered via /repurpose on Telegram.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">Published draft</span><span class="agent-tag">x-playbook.md</span><span class="agent-tag">substack-playbook.md</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">repurposed_content</span><span class="agent-tag">Telegram message</span></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- PART-TIME AGENTS                               -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="cat-divider" data-cat="pt">
+  <div class="cat-divider-title">Part-Time Agents</div>
+  <div class="cat-divider-count">4 agents / Manual / Intelligence Layer</div>
+</div>
+<div class="agent-grid" data-cat="pt">
+
+  <div class="agent-card" data-cat="pt">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><ellipse cx="24" cy="24" rx="16" ry="10" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="5" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/></svg></div>
+      <div class="agent-code">PT.01</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Niche Creator Researcher</span>
+        <span class="agent-schedule">MANUAL / QUARTERLY</span>
+      </div>
+      <div class="agent-desc">Maps the top creators in your niche on LinkedIn. Identifies who has audience, what content they produce, and what formats work. Output feeds into the Content Strategist's idea generation and helps avoid topics already saturated.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">LinkedIn profiles</span><span class="agent-tag">niche.md</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">watchlist.md</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="pt">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><line x1="12" y1="38" x2="12" y2="22" stroke="#1A1A1A" stroke-width="3"/><line x1="20" y1="38" x2="20" y2="14" stroke="#1A1A1A" stroke-width="3"/><line x1="28" y1="38" x2="28" y2="26" stroke="#1A1A1A" stroke-width="3"/><line x1="36" y1="38" x2="36" y2="10" stroke="#1A1A1A" stroke-width="3"/><line x1="6" y1="38" x2="42" y2="38" stroke="#1A1A1A" stroke-width="1"/></svg></div>
+      <div class="agent-code">PT.02</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Content Performance Analyst</span>
+        <span class="agent-schedule">MANUAL / QUARTERLY</span>
+      </div>
+      <div class="agent-desc">Analyzes what content already exists in your niche, then identifies what performs and why. Produces annotated examples with hook types, structure patterns, and engagement drivers. Output directly feeds the Writer's reference library.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">Niche content landscape</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">post-examples.md</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="pt">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="14" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><line x1="24" y1="6" x2="24" y2="42" stroke="#1A1A1A" stroke-width="1"/><line x1="6" y1="24" x2="42" y2="24" stroke="#1A1A1A" stroke-width="1"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/></svg></div>
+      <div class="agent-code">PT.03</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Cross-Market Content Researcher</span>
+        <span class="agent-schedule">MANUAL / QUARTERLY</span>
+      </div>
+      <div class="agent-desc">Looks outside your niche to find content formats that are working in other B2B verticals — tech, finance, consulting, healthcare — and translates them into formats that could work for you. The "steal like an artist" agent.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">Cross-industry content</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">cross-niche-formats.md</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="agent-card" data-cat="pt">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><polygon points="24,6 42,24 24,42 6,24" stroke="#1A1A1A" stroke-width="1.5" fill="none"/><polygon points="24,16 32,24 24,32 16,24" stroke="#1A1A1A" stroke-width="1" fill="none"/><circle cx="24" cy="24" r="2" fill="#1A1A1A"/></svg></div>
+      <div class="agent-code">PT.04</div>
+      <div class="agent-status-dot idle"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">Lead Agent</span>
+        <span class="agent-schedule">MANUAL / QUARTERLY</span>
+      </div>
+      <div class="agent-desc">Coordinates the part-time research team. Synthesises all findings from PT.01-PT.03 into a master report, identifies content gaps and opportunities, and produces the foundational intelligence that the Marketing Director reads every week.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Reads</div><div class="agent-data-tags"><span class="agent-tag">All PT agent outputs</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Writes</div><div class="agent-data-tags"><span class="agent-tag">RESEARCH_BRIEF.md</span><span class="agent-tag">content-gaps.md</span></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- HUMAN TOUCHPOINTS                              -->
+<!-- ═══════════════════════════════════════════════ -->
+<div class="cat-divider" data-cat="hu">
+  <div class="cat-divider-title">Human Touchpoints</div>
+  <div class="cat-divider-count">1 human / Decision Gates</div>
+</div>
+<div class="agent-grid" data-cat="hu">
+
+  <div class="agent-card" data-cat="hu">
+    <div class="agent-mark-col">
+      <div class="agent-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" fill="#1A1A1A"/><circle cx="24" cy="24" r="16" stroke="#1A1A1A" stroke-width="1" fill="none" stroke-dasharray="3 3"/></svg></div>
+      <div class="agent-code">HU.01</div>
+      <div class="agent-status-dot active"></div>
+    </div>
+    <div class="agent-details">
+      <div class="agent-header">
+        <span class="agent-name">You (Operator)</span>
+        <span class="agent-schedule">ALWAYS AVAILABLE</span>
+        <span class="agent-role-badge human">Human</span>
+      </div>
+      <div class="agent-desc">The human-in-the-loop at every critical decision point. Reviews 10 content ideas and multi-selects your picks. Reads draft text and approves, rejects, or sends edit notes. Reviews generated images and provides feedback. Sends strategic direction via /marketing_director. Posts approved content manually to LinkedIn.</div>
+      <div class="agent-data-grid">
+        <div class="agent-data-block"><div class="agent-data-label">Inputs</div><div class="agent-data-tags"><span class="agent-tag">Telegram notifications</span><span class="agent-tag">Ideas &#xd7; 10</span><span class="agent-tag">Draft text + score</span><span class="agent-tag">Generated image</span></div></div>
+        <div class="agent-data-block"><div class="agent-data-label">Actions</div><div class="agent-data-tags"><span class="agent-tag">Multi-select ideas</span><span class="agent-tag">APPROVE</span><span class="agent-tag">REJECT</span><span class="agent-tag">Edit notes</span><span class="agent-tag">/regenerate_image</span><span class="agent-tag">/image_feedback</span><span class="agent-tag">/marketing_director</span><span class="agent-tag">/repurpose</span></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span class="footer-text">BrandCrew / Agent Roster V.02</span>
+  <span class="footer-text">12 Components / 3 Categories</span>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+// Filter
+function filterAgents(cat) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  document.querySelectorAll('.agent-card, .cat-divider, .agent-grid').forEach(el => {
+    if (cat === 'all') {
+      el.style.display = '';
+    } else {
+      el.style.display = el.dataset.cat === cat ? '' : 'none';
+    }
+  });
+}
+
+// Particle strip
+(function() {
+  const c = document.getElementById('particleCanvas');
+  const ctx = c.getContext('2d');
+  function resize() { c.width = c.parentElement.clientWidth; c.height = c.parentElement.clientHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const particles = [];
+  for (let i = 0; i < 300; i++) {
+    particles.push({
+      x: Math.random(), y: Math.random(),
+      vx: (Math.random()-0.5)*0.0003, vy: (Math.random()-0.5)*0.0006,
+      size: Math.random()*1.2+0.4, phase: Math.random()*Math.PI*2
+    });
+  }
+  let t = 0;
+  function draw() {
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#E8E3D8';
+    ctx.fillRect(0,0,w,h);
+    for (const p of particles) {
+      const centerY = 0.5, dist = Math.abs(p.y-centerY), wave = Math.max(0,1-dist*3);
+      p.x += p.vx + Math.sin(p.x*12+t*1.5+p.phase)*0.006*wave;
+      p.y += p.vy + Math.cos(p.x*8+t*0.8+p.phase)*0.003*wave;
+      if(wave>0.3) p.y += (centerY-p.y)*0.001;
+      if(p.x<0)p.x=1; if(p.x>1)p.x=0; if(p.y<0)p.y=1; if(p.y>1)p.y=0;
+      ctx.beginPath(); ctx.arc(p.x*w,p.y*h,p.size*(1+wave*1.5),0,Math.PI*2);
+      ctx.fillStyle = `rgba(26,26,26,${0.08+wave*0.4})`; ctx.fill();
+    }
+    t+=0.02; requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — Feedback Loops</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --fg: #1A1A1A;
+    --fg-secondary: #6B6560;
+    --fg-dim: #A09A93;
+    --accent-green: #5CBF3A;
+    --accent-red: #C44B28;
+    --border: #D6D1C8;
+    --dark-bg: #141414;
+    --dark-border: #2A2A2A;
+    --dark-border-light: #333333;
+    --dark-fg: #E8E3D8;
+    --dark-fg-dim: #6B6560;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .nav { position: fixed; top: 0; left: 0; width: 100%; padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .nav-brand { font-size: 10px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; }
+  .nav-tabs { display: flex; gap: 0; }
+  .nav-tab { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; border: 1px solid var(--border); border-right: none; background: transparent; color: var(--fg-dim); cursor: pointer; transition: all 0.2s ease; }
+  .nav-tab:last-child { border-right: 1px solid var(--border); }
+  .nav-tab:hover { color: var(--fg); background: var(--bg-alt); }
+  .nav-tab.active { background: var(--fg); color: var(--bg); }
+  .nav-version { font-size: 9px; font-weight: 300; color: var(--fg-dim); letter-spacing: 1.5px; }
+
+  .hero { margin-top: 52px; padding: 48px 60px 32px; }
+  .hero-label { font-size: 9px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: var(--fg-dim); margin-bottom: 16px; }
+  .hero-title { font-size: 28px; font-weight: 300; line-height: 1.3; margin-bottom: 12px; }
+  .hero-title strong { font-weight: 600; }
+  .hero-desc { font-size: 11px; font-weight: 300; line-height: 1.8; color: var(--fg-secondary); max-width: 660px; }
+  .hero-meta { display: flex; gap: 32px; margin-top: 24px; }
+  .hero-meta-item { font-size: 9px; font-weight: 400; letter-spacing: 1.5px; color: var(--fg-dim); }
+  .hero-meta-item span { color: var(--fg); font-weight: 500; }
+
+  .dark-panel { margin: 32px 40px; background: var(--dark-bg); border: 1px solid var(--dark-border); position: relative; overflow: hidden; }
+  .dark-panel-header { padding: 16px 24px; border-bottom: 1px solid var(--dark-border); display: flex; justify-content: space-between; align-items: center; }
+  .dark-panel-title { font-size: 9px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: var(--dark-fg-dim); }
+  .dark-panel-badge { font-size: 8px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border: 1px solid var(--accent-green); color: var(--accent-green); }
+
+  .loop-container { position: relative; padding: 40px 24px; }
+  .loop-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .loop-steps { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 0; }
+  .loop-row { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 0; align-items: center; }
+  .loop-step { padding: 20px 24px; border: 1px solid var(--dark-border-light); background: rgba(20,20,20,0.9); transition: border-color 0.3s ease; }
+  .loop-step:hover { border-color: var(--accent-green); }
+  .loop-step-number { font-size: 9px; font-weight: 500; letter-spacing: 2px; color: var(--accent-green); margin-bottom: 6px; }
+  .loop-step-title { font-size: 11px; font-weight: 500; color: var(--dark-fg); letter-spacing: 0.5px; margin-bottom: 6px; }
+  .loop-step-desc { font-size: 9px; font-weight: 300; line-height: 1.6; color: var(--dark-fg-dim); }
+  .loop-step-command { margin-top: 8px; display: inline-block; font-size: 9px; font-weight: 500; letter-spacing: 1px; padding: 3px 8px; border: 1px solid var(--accent-green); color: var(--accent-green); }
+  .loop-step-file { margin-top: 8px; display: inline-block; font-size: 9px; font-weight: 400; letter-spacing: 1px; padding: 3px 8px; border: 1px solid var(--dark-border-light); color: var(--dark-fg-dim); }
+  .loop-connector { display: flex; align-items: center; justify-content: center; color: var(--dark-fg-dim); font-size: 16px; position: relative; }
+  .loop-connector::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--dark-border-light); }
+  .loop-connector-arrow { position: relative; z-index: 1; background: var(--dark-bg); padding: 0 8px; font-size: 10px; color: var(--accent-green); letter-spacing: 2px; }
+  .loop-vertical-connector { display: flex; justify-content: center; padding: 8px 0; }
+  .loop-vertical-line { width: 1px; height: 32px; background: var(--dark-border-light); position: relative; }
+  .loop-vertical-line::after { content: '↓'; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--accent-green); background: var(--dark-bg); padding: 0 4px; }
+  .loop-return { display: flex; justify-content: center; padding: 16px 0; }
+  .loop-return-line { padding: 8px 20px; border: 1px dashed var(--dark-border-light); font-size: 9px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-green); }
+
+  .commands-section { margin: 0 40px 40px; border: 1px solid var(--border); padding: 32px; }
+  .commands-title { font-size: 10px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px; }
+  .commands-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .command-card { padding: 20px; border: 1px solid var(--border); transition: background 0.2s ease; }
+  .command-card:hover { background: var(--bg-alt); }
+  .command-name { font-size: 11px; font-weight: 500; color: var(--accent-green); letter-spacing: 0.5px; margin-bottom: 8px; }
+  .command-desc { font-size: 10px; font-weight: 300; line-height: 1.6; color: var(--fg-secondary); margin-bottom: 10px; }
+  .command-detail { display: flex; flex-direction: column; gap: 4px; }
+  .command-detail-row { display: flex; gap: 12px; font-size: 9px; }
+  .command-detail-label { font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-dim); min-width: 60px; }
+  .command-detail-value { font-weight: 300; color: var(--fg-secondary); }
+
+  .footer { padding: 32px 60px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; }
+  .footer-text { font-size: 9px; font-weight: 300; color: var(--fg-dim); letter-spacing: 1.5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-label">System / Feedback Loops</div>
+  <h1 class="hero-title"><strong>Self-Improving</strong> System</h1>
+  <p class="hero-desc">The system doesn't just execute — it learns. Every human interaction feeds back into the pipeline through the Marketing Director, gradually improving both content quality and design output over time. Three Telegram commands are the entry points.</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">LOOPS: <span>2</span></div>
+    <div class="hero-meta-item">ENTRY POINTS: <span>3 COMMANDS</span></div>
+    <div class="hero-meta-item">CYCLE: <span>WEEKLY</span></div>
+    <div class="hero-meta-item">PROCESSOR: <span>FT.02 MARKETING DIRECTOR</span></div>
+  </div>
+</section>
+
+<div class="dark-panel">
+  <canvas class="loop-canvas" id="canvas1"></canvas>
+  <div class="dark-panel-header">
+    <div class="dark-panel-title">LOOP_01 — CONTENT QUALITY</div>
+    <div class="dark-panel-badge">ACTIVE</div>
+  </div>
+  <div class="loop-container">
+    <div class="loop-steps">
+      <div class="loop-row">
+        <div class="loop-step">
+          <div class="loop-step-number">01</div>
+          <div class="loop-step-title">Human Reviews Draft</div>
+          <div class="loop-step-desc">Operator reads post text on Telegram. Sends edit notes, rejects, or provides strategic direction about content quality and approach.</div>
+          <div class="loop-step-command">/marketing_director</div>
+        </div>
+        <div class="loop-connector"><span class="loop-connector-arrow">→</span></div>
+        <div class="loop-step">
+          <div class="loop-step-number">02</div>
+          <div class="loop-step-title">Feedback Logged</div>
+          <div class="loop-step-desc">Edit notes, idea rejections, and /marketing_director messages are all saved to agent_logs with distinct action tags so they can be filtered and analyzed.</div>
+          <div class="loop-step-file">agent_logs → action: edit_requested</div>
+          <div class="loop-step-file">agent_logs → action: idea_adjustment</div>
+          <div class="loop-step-file">agent_logs → action: operator_feedback</div>
+        </div>
+      </div>
+      <div class="loop-vertical-connector"><div class="loop-vertical-line"></div></div>
+      <div class="loop-row">
+        <div class="loop-step">
+          <div class="loop-step-number">04</div>
+          <div class="loop-step-title">Downstream Agents Read</div>
+          <div class="loop-step-desc">Content Strategist generates ideas aligned with updated direction. Content Creator writes posts following new patterns. Quality improves incrementally each week.</div>
+          <div class="loop-step-file">FT.03 reads performance-patterns.md</div>
+          <div class="loop-step-file">FT.04 reads performance-patterns.md</div>
+        </div>
+        <div class="loop-connector"><span class="loop-connector-arrow">←</span></div>
+        <div class="loop-step">
+          <div class="loop-step-number">03</div>
+          <div class="loop-step-title">Marketing Director Synthesizes</div>
+          <div class="loop-step-desc">Weekly, FT.02 reads all feedback from the week. Identifies patterns — repeated rejections, edit themes, strategic preferences — and updates the direction file.</div>
+          <div class="loop-step-file">→ performance-patterns.md</div>
+          <div class="loop-step-file">→ content-gaps.md</div>
+        </div>
+      </div>
+      <div class="loop-return"><div class="loop-return-line">↻ CYCLE REPEATS WEEKLY</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="dark-panel">
+  <canvas class="loop-canvas" id="canvas2"></canvas>
+  <div class="dark-panel-header">
+    <div class="dark-panel-title">LOOP_02 — DESIGN QUALITY</div>
+    <div class="dark-panel-badge">ACTIVE</div>
+  </div>
+  <div class="loop-container">
+    <div class="loop-steps">
+      <div class="loop-row">
+        <div class="loop-step">
+          <div class="loop-step-number">01</div>
+          <div class="loop-step-title">Human Reviews Design</div>
+          <div class="loop-step-desc">Operator sees the generated design on Telegram. Logs quality observations — layout clarity, text readability, visual balance, template fit — without triggering regeneration.</div>
+          <div class="loop-step-command">/design_feedback [notes]</div>
+        </div>
+        <div class="loop-connector"><span class="loop-connector-arrow">→</span></div>
+        <div class="loop-step">
+          <div class="loop-step-number">02</div>
+          <div class="loop-step-title">Feedback Logged</div>
+          <div class="loop-step-desc">Design quality notes saved to agent_logs with a distinct tag. Regeneration feedback also saved separately. Both are readable by the Marketing Director.</div>
+          <div class="loop-step-file">agent_logs → action: design_quality_feedback</div>
+          <div class="loop-step-file">agent_logs → action: design_feedback</div>
+        </div>
+      </div>
+      <div class="loop-vertical-connector"><div class="loop-vertical-line"></div></div>
+      <div class="loop-row">
+        <div class="loop-step">
+          <div class="loop-step-number">04</div>
+          <div class="loop-step-title">Designer Reads Updated Rules</div>
+          <div class="loop-step-desc">Next time FT.06 generates a design, it loads the updated brand-guidelines-skill.md. The operator's feedback is now baked into the visual direction. Designs improve over time.</div>
+          <div class="loop-step-file">FT.06 reads brand-guidelines-skill.md</div>
+        </div>
+        <div class="loop-connector"><span class="loop-connector-arrow">←</span></div>
+        <div class="loop-step">
+          <div class="loop-step-number">03</div>
+          <div class="loop-step-title">Marketing Director Analyzes Patterns</div>
+          <div class="loop-step-desc">Weekly synthesis. If 3+ design feedback notes point the same direction (e.g. "text too small"), FT.02 adds an Operator Feedback Patterns section to the brand guidelines file.</div>
+          <div class="loop-step-file">→ brand-guidelines-skill.md</div>
+          <div class="loop-step-file">→ performance-patterns.md (design section)</div>
+        </div>
+      </div>
+      <div class="loop-return"><div class="loop-return-line">↻ CYCLE REPEATS WEEKLY</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="dark-panel" style="margin-bottom:40px;">
+  <div class="dark-panel-header">
+    <div class="dark-panel-title">IMMEDIATE ACTION — DESIGN REGENERATION</div>
+    <div class="dark-panel-badge" style="border-color:#E8E3D8;color:#E8E3D8;">INSTANT</div>
+  </div>
+  <div class="loop-container">
+    <div class="loop-steps">
+      <div class="loop-row">
+        <div class="loop-step">
+          <div class="loop-step-number">01</div>
+          <div class="loop-step-title">Operator Sends Feedback</div>
+          <div class="loop-step-desc">Not happy with the current design. Sends specific visual feedback directly on Telegram.</div>
+          <div class="loop-step-command">/regenerate_design [feedback]</div>
+        </div>
+        <div class="loop-connector"><span class="loop-connector-arrow">→</span></div>
+        <div class="loop-step">
+          <div class="loop-step-number">02</div>
+          <div class="loop-step-title">Designer Regenerates</div>
+          <div class="loop-step-desc">FT.06 fires immediately with the feedback injected. Adjusts template parameters incorporating the notes, regenerates the design, delivers the new image to Telegram. Feedback also logged for the weekly loop.</div>
+          <div class="loop-step-file">FT.06 → Template Engine → Telegram</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="commands-section">
+  <div class="commands-title">Entry Point Commands</div>
+  <div class="commands-grid">
+    <div class="command-card">
+      <div class="command-name">/marketing_director [message]</div>
+      <div class="command-desc">Send strategic direction to the Marketing Director. Notes about content approach, audience focus, topics to prioritize or avoid.</div>
+      <div class="command-detail">
+        <div class="command-detail-row"><span class="command-detail-label">Logs as</span><span class="command-detail-value">action: operator_feedback</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Read by</span><span class="command-detail-value">FT.02 weekly</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Updates</span><span class="command-detail-value">performance-patterns.md</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Effect</span><span class="command-detail-value">Weekly — next pipeline cycle</span></div>
+      </div>
+    </div>
+    <div class="command-card">
+      <div class="command-name">/design_feedback [notes]</div>
+      <div class="command-desc">Log design quality observations for gradual improvement. Layout clarity, text readability, visual balance, template fit notes.</div>
+      <div class="command-detail">
+        <div class="command-detail-row"><span class="command-detail-label">Logs as</span><span class="command-detail-value">action: design_quality_feedback</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Read by</span><span class="command-detail-value">FT.02 weekly</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Updates</span><span class="command-detail-value">brand-guidelines-skill.md (if 3+ patterns)</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Effect</span><span class="command-detail-value">Weekly — gradual improvement</span></div>
+      </div>
+    </div>
+    <div class="command-card">
+      <div class="command-name">/regenerate_design [feedback]</div>
+      <div class="command-desc">Immediately regenerate the current design with specific visual feedback. Triggers the Designer right now, not on the weekly cycle.</div>
+      <div class="command-detail">
+        <div class="command-detail-row"><span class="command-detail-label">Logs as</span><span class="command-detail-value">action: design_feedback</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Triggers</span><span class="command-detail-value">FT.06 immediately</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Updates</span><span class="command-detail-value">template_key + image_url on draft</span></div>
+        <div class="command-detail-row"><span class="command-detail-label">Effect</span><span class="command-detail-value">Instant — new design arrives in Telegram</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span class="footer-text">BrandCrew / Feedback Loops V.02</span>
+  <span class="footer-text">2 Weekly Loops / 1 Instant Action / 3 Commands</span>
+</div>
+
+<script>
+function initLoopCanvas(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  function resize() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+  resize(); window.addEventListener('resize', resize);
+  const particles = [];
+  for (let i = 0; i < 80; i++) { particles.push({ progress: Math.random(), speed: 0.001 + Math.random() * 0.003, size: Math.random() * 1.5 + 0.5, alpha: Math.random() * 0.3 + 0.1, offset: (Math.random() - 0.5) * 20 }); }
+  const ambient = [];
+  for (let i = 0; i < 40; i++) { ambient.push({ x: Math.random(), y: Math.random(), vx: (Math.random()-0.5)*0.0002, vy: (Math.random()-0.5)*0.0002, size: Math.random()*1+0.3, phase: Math.random()*Math.PI*2 }); }
+  let time = 0;
+  function draw() {
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const margin = 60;
+    const path = [{ x: margin, y: margin }, { x: w - margin, y: margin }, { x: w - margin, y: h - margin }, { x: margin, y: h - margin }];
+    ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) { ctx.lineTo(path[i].x, path[i].y); }
+    ctx.closePath(); ctx.strokeStyle = 'rgba(92, 191, 58, 0.04)'; ctx.lineWidth = 1; ctx.stroke();
+    const totalPerimeter = 2 * (w - 2*margin) + 2 * (h - 2*margin);
+    for (const p of particles) {
+      p.progress = (p.progress + p.speed) % 1;
+      let dist = p.progress * totalPerimeter; let px, py;
+      const seg1 = w - 2*margin, seg2 = h - 2*margin, seg3 = w - 2*margin;
+      if (dist < seg1) { px = margin + dist; py = margin; }
+      else if (dist < seg1 + seg2) { px = w - margin; py = margin + (dist - seg1); }
+      else if (dist < seg1 + seg2 + seg3) { px = w - margin - (dist - seg1 - seg2); py = h - margin; }
+      else { px = margin; py = h - margin - (dist - seg1 - seg2 - seg3); }
+      px += p.offset * Math.sin(time + p.progress * Math.PI * 4) * 0.3;
+      py += p.offset * Math.cos(time + p.progress * Math.PI * 3) * 0.3;
+      ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(92, 191, 58, ${p.alpha})`; ctx.fill();
+    }
+    for (const a of ambient) {
+      a.x += a.vx + Math.sin(time*0.5+a.phase)*0.00003; a.y += a.vy + Math.cos(time*0.3+a.phase)*0.00003;
+      if(a.x<0)a.x=1; if(a.x>1)a.x=0; if(a.y<0)a.y=1; if(a.y>1)a.y=0;
+      ctx.beginPath(); ctx.arc(a.x*w, a.y*h, a.size, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(232,227,216,0.03)'; ctx.fill();
+    }
+    time += 0.02; requestAnimationFrame(draw);
+  }
+  draw();
+}
+initLoopCanvas('canvas1');
+initLoopCanvas('canvas2');
+</script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — System Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Sora:wght@200;300;400;500;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1A1A1A; overflow: hidden; }
+
+  /* ══ INTRO SPLASH ══ */
+  #intro-screen {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 9999; cursor: none;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #intro-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  #intro-screen canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; }
+  .intro-content {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 10; pointer-events: none;
+  }
+  .intro-title {
+    font-family: 'Sora', sans-serif; font-size: 56px; font-weight: 200;
+    letter-spacing: 6px; text-transform: uppercase; color: #F0EBE0;
+    mix-blend-mode: difference; text-align: center; line-height: 1.3;
+  }
+  .intro-title strong {
+    font-family: 'IBM Plex Mono', monospace; font-weight: 400;
+    display: block; font-size: 11px; letter-spacing: 5px; margin-top: 20px; opacity: 0.4;
+  }
+
+  /* ── Custom cursor ── */
+  .custom-cursor {
+    position: fixed; pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s ease;
+  }
+  .cursor-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #F0EBE0; mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    position: absolute; top: 50%; left: 50%;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid rgba(240,235,224,0.4);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease;
+  }
+  .cursor-text {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px; height: 80px;
+  }
+  .cursor-text svg {
+    width: 80px; height: 80px;
+    animation: cursorSpin 8s linear infinite;
+  }
+  .cursor-text text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; letter-spacing: 4px;
+    text-transform: uppercase; fill: #F0EBE0;
+    opacity: 0.6;
+  }
+  @keyframes cursorSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── Enter hint (bottom center) ── */
+  .enter-hint {
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 4px;
+    text-transform: uppercase; color: #F0EBE0; z-index: 10;
+    mix-blend-mode: difference; pointer-events: none;
+    display: flex; align-items: center; gap: 12px;
+    opacity: 0; animation: hintFadeIn 1.5s ease 1.2s forwards;
+  }
+  .enter-hint .hint-arrow {
+    display: inline-block;
+    animation: hintBounce 1.5s ease-in-out infinite;
+  }
+  @keyframes hintFadeIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    to { opacity: 0.6; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes hintBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  /* ── Corner text ── */
+  .corner-text {
+    position: fixed; font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    letter-spacing: 2px; text-transform: uppercase; color: #F0EBE0;
+    opacity: 0.15; z-index: 10; mix-blend-mode: difference;
+  }
+  .corner-tl { top: 24px; left: 24px; }
+  .corner-tr { top: 24px; right: 24px; }
+  .corner-bl { bottom: 24px; left: 24px; }
+
+  /* ── Ghost code overlay ── */
+  .code-ghost {
+    position: fixed; top: 0; right: 0; width: 45%; height: 100vh;
+    z-index: 2; pointer-events: none; overflow: hidden;
+    mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+  }
+  .code-ghost-inner {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; line-height: 1.8;
+    color: #F0EBE0; opacity: 0.12; white-space: pre;
+    animation: codeScroll 80s linear infinite; padding: 40px 30px;
+  }
+  @keyframes codeScroll { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+
+  /* ══ DASHBOARD ══ */
+  #dashboard {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s ease 0.3s;
+    background: #F0EBE0;
+  }
+  #dashboard.visible { opacity: 1; pointer-events: auto; }
+
+  /* ══ NAV ══ */
+  .nav {
+    position: absolute; top: 0; left: 0; width: 100%; height: 44px;
+    padding: 0 32px; display: flex; justify-content: space-between; align-items: center;
+    z-index: 100; background: #F0EBE0; border-bottom: 1px solid #D6D1C8;
+  }
+  .nav-brand {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; font-weight: 500; letter-spacing: 4px;
+    text-transform: uppercase; cursor: pointer; color: #1A1A1A;
+  }
+  .nav-brand:hover { opacity: 0.6; }
+  .nav-tabs { display: flex; gap: 0; }
+  .nav-tab {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 400;
+    letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px;
+    border: 1px solid #D6D1C8; border-right: none;
+    background: transparent; color: #A09A93; cursor: pointer; transition: all 0.2s ease;
+  }
+  .nav-tab:last-child { border-right: 1px solid #D6D1C8; }
+  .nav-tab:hover { color: #1A1A1A; background: #E8E3D8; }
+  .nav-tab.active { background: #1A1A1A; color: #F0EBE0; }
+  .nav-version {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px; font-weight: 300; color: #A09A93; letter-spacing: 1.5px;
+  }
+
+  /* ══ IFRAME TABS ══ */
+  .tab-frame {
+    position: absolute; top: 44px; left: 0;
+    width: 100%; height: calc(100vh - 44px);
+    border: none; display: none;
+  }
+  .tab-frame.active { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ══ INTRO SPLASH ══ -->
+<div id="intro-screen">
+  <canvas id="introCanvas"></canvas>
+  <div class="code-ghost" id="codeGhost"></div>
+  <div class="intro-content">
+    <div class="intro-title">
+      BrandCrew
+      <strong>An autonomous content marketing team. Talk to your agents on Telegram. Always on. Auto-improving.</strong>
+    </div>
+  </div>
+  <div class="corner-text corner-tl">BRANDCREW / V.02</div>
+  <div class="corner-text corner-tr">2026</div>
+  <div class="corner-text corner-bl">System Dashboard</div>
+  <div class="enter-hint">
+    <span class="hint-arrow">&#x2193;</span>
+    Click anywhere to explore
+    <span class="hint-arrow">&#x2193;</span>
+  </div>
+</div>
+
+<!-- ══ CUSTOM CURSOR ══ -->
+<div class="custom-cursor" id="customCursor">
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+  <div class="cursor-text">
+    <svg viewBox="0 0 80 80">
+      <defs>
+        <path id="cursorPath" d="M 40,40 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0" />
+      </defs>
+      <text>
+        <textPath href="#cursorPath">click &#x2022; explore &#x2022; click &#x2022; explore &#x2022; </textPath>
+      </text>
+    </svg>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ══ -->
+<div id="dashboard">
+  <nav class="nav">
+    <div class="nav-brand" onclick="showIntro()">BRANDCREW</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="overview">Overview</button>
+      <button class="nav-tab" data-tab="symbols">Symbols</button>
+      <button class="nav-tab" data-tab="architecture">Architecture</button>
+      <button class="nav-tab" data-tab="pipeline">Pipeline</button>
+      <button class="nav-tab" data-tab="agents">Agents</button>
+      <button class="nav-tab" data-tab="dataflow">Data Flow</button>
+      <button class="nav-tab" data-tab="feedback">Feedback</button>
+      <button class="nav-tab" data-tab="stack">Stack</button>
+      <button class="nav-tab" data-tab="files">Files</button>
+    </div>
+    <div class="nav-version">V.02</div>
+  </nav>
+
+  <!-- Each section is its own iframe — lazy-loaded on first visit -->
+  <iframe class="tab-frame active" id="frame-overview" src="sections/overview.html"></iframe>
+  <iframe class="tab-frame" id="frame-symbols" data-src="sections/symbols.html"></iframe>
+  <iframe class="tab-frame" id="frame-architecture" data-src="sections/architecture.html"></iframe>
+  <iframe class="tab-frame" id="frame-pipeline" data-src="sections/pipeline.html"></iframe>
+  <iframe class="tab-frame" id="frame-agents" data-src="sections/agents.html"></iframe>
+  <iframe class="tab-frame" id="frame-dataflow" data-src="sections/dataflow.html"></iframe>
+  <iframe class="tab-frame" id="frame-feedback" data-src="sections/feedback.html"></iframe>
+  <iframe class="tab-frame" id="frame-stack" data-src="sections/stack.html"></iframe>
+  <iframe class="tab-frame" id="frame-files" data-src="sections/files.html"></iframe>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+// CUSTOM CURSOR
+// ══════════════════════════════════════════════════
+(function() {
+  const cursor = document.getElementById('customCursor');
+  const introScreen = document.getElementById('intro-screen');
+  let cursorX = window.innerWidth / 2, cursorY = window.innerHeight / 2;
+  let renderX = cursorX, renderY = cursorY;
+
+  document.addEventListener('mousemove', e => {
+    cursorX = e.clientX;
+    cursorY = e.clientY;
+  });
+
+  function updateCursor() {
+    // Smooth follow
+    renderX += (cursorX - renderX) * 0.15;
+    renderY += (cursorY - renderY) * 0.15;
+    cursor.style.left = renderX + 'px';
+    cursor.style.top = renderY + 'px';
+
+    // Only show on intro screen
+    const introVisible = !introScreen.classList.contains('hidden');
+    cursor.style.opacity = introVisible ? '1' : '0';
+
+    requestAnimationFrame(updateCursor);
+  }
+  updateCursor();
+
+  // Hide on touch devices
+  if ('ontouchstart' in window) {
+    cursor.style.display = 'none';
+    introScreen.style.cursor = 'pointer';
+  }
+})();
+
+// ══════════════════════════════════════════════════
+// INTRO ANIMATION
+// ══════════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('introCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, mouseX=0.5, mouseY=0.5, targetX=0.5, targetY=0.5, time=0;
+  let grainCanvas, grainCtx, introActive=true;
+
+  function resize() {
+    W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight;
+    grainCanvas=document.createElement('canvas');
+    grainCanvas.width=W; grainCanvas.height=H;
+    grainCtx=grainCanvas.getContext('2d');
+  }
+  resize();
+  window.addEventListener('resize', () => { if(introActive) resize(); });
+  document.addEventListener('mousemove', e => { targetX=e.clientX/W; targetY=e.clientY/H; });
+
+  function generateGrain() {
+    const id=grainCtx.createImageData(W,H), d=id.data;
+    for(let i=0;i<d.length;i+=4){const g=Math.random()*60;d[i]=g;d[i+1]=g;d[i+2]=g;d[i+3]=255;}
+    grainCtx.putImageData(id,0,0);
+  }
+
+  function draw() {
+    if(!introActive) return;
+    mouseX+=(targetX-mouseX)*0.03; mouseY+=(targetY-mouseY)*0.03;
+    ctx.fillStyle='#1A1A1A'; ctx.fillRect(0,0,W,H);
+
+    // Gradient blobs
+    const blobs=[
+      {x:W*(0.3+mouseX*0.4),y:H*(0.3+mouseY*0.4),r:Math.min(W,H)*0.45,s:[[0,'rgba(240,235,224,0.7)'],[0.3,'rgba(240,235,224,0.3)'],[0.6,'rgba(200,195,185,0.1)'],[1,'rgba(26,26,26,0)']]},
+      {x:W*(0.7-mouseX*0.3)+Math.sin(time*0.5)*40,y:H*(0.6-mouseY*0.2)+Math.cos(time*0.4)*30,r:Math.min(W,H)*0.35,s:[[0,'rgba(220,210,190,0.4)'],[0.4,'rgba(180,170,150,0.15)'],[1,'rgba(26,26,26,0)']]},
+      {x:W*mouseX+Math.cos(time*0.8)*20,y:H*mouseY+Math.sin(time*0.6)*20,r:Math.min(W,H)*0.2,s:[[0,'rgba(245,240,230,0.5)'],[0.3,'rgba(240,235,224,0.2)'],[1,'rgba(26,26,26,0)']]},
+      {x:W*(0.5-mouseX*0.2)+Math.sin(time*0.3)*60,y:H*(0.4+mouseY*0.2)+Math.cos(time*0.35)*50,r:Math.min(W,H)*0.5,s:[[0,'rgba(10,10,10,0.6)'],[0.5,'rgba(20,20,20,0.3)'],[1,'rgba(26,26,26,0)']]},
+      {x:W*0.2+Math.sin(time*0.2)*80,y:H*0.8+Math.cos(time*0.25)*60,r:Math.min(W,H)*0.3,s:[[0,'rgba(230,225,210,0.25)'],[0.5,'rgba(200,195,180,0.08)'],[1,'rgba(26,26,26,0)']]}
+    ];
+    blobs.forEach(b=>{
+      const g=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);
+      b.s.forEach(s=>g.addColorStop(s[0],s[1]));
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    });
+
+    // Grain
+    generateGrain();
+    ctx.globalCompositeOperation='overlay';ctx.globalAlpha=0.35;ctx.drawImage(grainCanvas,0,0);
+    ctx.globalCompositeOperation='multiply';ctx.globalAlpha=0.15;ctx.drawImage(grainCanvas,0,0);
+    ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+
+    // Vignette
+    const vg=ctx.createRadialGradient(W/2,H/2,W*0.2,W/2,H/2,W*0.7);
+    vg.addColorStop(0,'rgba(26,26,26,0)');vg.addColorStop(1,'rgba(10,10,10,0.4)');
+    ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+
+    time+=0.01; requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Ghost code overlay — cleaned for public release
+  const codeLines=[
+    'def get_supabase() -> Client:','    return create_client(SUPABASE_URL, SUPABASE_KEY)','',
+    '# ── State management ──────────────────','def load_state() -> dict:',
+    '    if os.path.exists(STATE_FILE):','        with open(STATE_FILE, "r") as f:',
+    '            return json.load(f)','    return {}','',
+    'APPROVED_IDS = set(int(i.strip())','    for i in _raw_ids.split(",")','    if i.strip())','',
+    '# ── Agent trigger ────────────────────','def trigger_agent(name, args=None):',
+    '    script = AGENT_SCRIPTS.get(name)','    cmd = ["bash", script] + (args or [])',
+    '    subprocess.Popen(cmd,','        stdout=open(log_path, "a"),','        stderr=subprocess.STDOUT)','',
+    'set -euo pipefail','PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"','LOCK_FILE="/tmp/brandcrew-agent.lock"','',
+    '# ── Prevent overlapping runs ─────────','if [ -f "$LOCK_FILE" ]; then',
+    '  LOCK_AGE=$(( $(date +%s) - $(stat','  if [ "$LOCK_AGE" -lt 3600 ]; then',
+    '    echo "SKIPPED — lock file exists"','    exit 0','  fi','fi','',
+    '# Agents communicate through files.','# File edits, not weight updates.','',
+    'QUALITY_PASS → Telegram → APPROVE','  → social_media_designer/run.sh [id]',
+    '  → render_template.py','  → Telegram: image delivered','',
+    '# 7 agents. 0 orchestrators.','# The filesystem IS the bus.','',
+    'sb.table("content_ideas")',
+    '  .select("id, hook, angle")',
+    '  .eq("status", "approved")',
+    '  .order("created_at")',
+    '  .limit(1).execute()','',
+    '# Sunday: research → strategy → ideas','# Mon-Fri: write → score → approve → image','',
+    'playwright install chromium','python3 scripts/render_template.py','# 1080×1350 JPG — zero API cost',''
+  ];
+  const fullCode=[...codeLines,...codeLines].join('\n');
+  const ghostEl=document.getElementById('codeGhost');
+  const inner=document.createElement('div');
+  inner.className='code-ghost-inner';
+  inner.textContent=fullCode;
+  ghostEl.appendChild(inner);
+
+  // Enter dashboard
+  window.enterDashboard = function() {
+    introActive=false;
+    document.getElementById('intro-screen').classList.add('hidden');
+    document.getElementById('dashboard').classList.add('visible');
+    document.body.style.background='#F0EBE0';
+  };
+
+  window.showIntro = function() {
+    introActive=true;
+    document.getElementById('intro-screen').classList.remove('hidden');
+    document.getElementById('dashboard').classList.remove('visible');
+    document.body.style.background='#1A1A1A';
+    resize(); draw();
+  };
+
+  document.getElementById('intro-screen').addEventListener('click', enterDashboard);
+})();
+
+// ══════════════════════════════════════════════════
+// TAB SWITCHING (lazy-load iframes)
+// ══════════════════════════════════════════════════
+document.querySelectorAll('.nav-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabId = btn.dataset.tab;
+
+    // Update nav buttons
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Update iframe visibility
+    document.querySelectorAll('.tab-frame').forEach(f => f.classList.remove('active'));
+    const frame = document.getElementById('frame-' + tabId);
+    if (frame) {
+      frame.classList.add('active');
+      // Lazy load: set src from data-src on first visit
+      if (!frame.src && frame.dataset.src) {
+        frame.src = frame.dataset.src;
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>

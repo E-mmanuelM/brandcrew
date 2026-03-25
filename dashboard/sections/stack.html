@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrandCrew — Stack</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F0EBE0;
+    --bg-alt: #E8E3D8;
+    --fg: #1A1A1A;
+    --fg-dim: #A09A93;
+    --border: #D6D1C8;
+    --dark-bg: #111111;
+    --dark-bg-alt: #181818;
+    --dark-border: #252525;
+    --dark-border-light: #333;
+    --dark-fg: #E8E3D8;
+    --dark-fg-dim: #5A5550;
+    --dark-fg-mid: #8A8580;
+    --green: #5CBF3A;
+    --green-dim: rgba(92,191,58,0.15);
+    --red: #C44B28;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark-bg);
+    color: var(--dark-fg);
+    font-family: 'IBM Plex Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .page { position: relative; }
+
+  .sys-header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--dark-border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sys-title { font-size: 9px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: var(--dark-fg-dim); }
+  .sys-status { display: flex; gap: 24px; }
+  .sys-stat { font-size: 9px; letter-spacing: 1.5px; color: var(--dark-fg-dim); }
+  .sys-stat span { color: var(--dark-fg); font-weight: 500; }
+  .sys-stat .live { color: var(--green); }
+
+  #mainCanvas { width: 100%; height: 200px; display: block; }
+
+  .services { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+
+  .service { border: 1px solid var(--dark-border); border-top: none; position: relative; overflow: hidden; min-height: 280px; }
+  .service:nth-child(1), .service:nth-child(2), .service:nth-child(3) { border-top: 1px solid var(--dark-border); }
+
+  .service-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+  .service-content { position: relative; z-index: 1; padding: 24px; height: 100%; display: flex; flex-direction: column; }
+
+  .service-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .service-name { font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--dark-fg); }
+
+  .service-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(92,191,58,0.4); animation: pulse 2s ease infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(92,191,58,0.4); } 50% { opacity: 0.6; box-shadow: 0 0 4px rgba(92,191,58,0.2); } }
+
+  .service-mark { width: 40px; height: 40px; margin-bottom: 16px; }
+  .service-mark svg { width: 40px; height: 40px; }
+
+  .service-desc { font-size: 9px; font-weight: 300; line-height: 1.7; color: var(--dark-fg-mid); margin-bottom: 16px; flex-grow: 1; }
+
+  .service-specs { margin-top: auto; }
+  .spec-row { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--dark-border); font-size: 9px; }
+  .spec-label { color: var(--dark-fg-dim); letter-spacing: 1.5px; text-transform: uppercase; }
+  .spec-value { color: var(--dark-fg); font-weight: 400; }
+  .spec-value.green { color: var(--green); }
+
+  .conn-section { border-top: 1px solid var(--dark-border); padding: 32px; }
+  .conn-title { font-size: 9px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: var(--dark-fg-dim); margin-bottom: 24px; }
+  #connCanvas { width: 100%; height: 300px; display: block; }
+
+  .transfer-section { border-top: 1px solid var(--dark-border); display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; }
+  .transfer-cell { padding: 24px 20px; border-right: 1px solid var(--dark-border); text-align: center; }
+  .transfer-cell:last-child { border-right: none; }
+  .transfer-label { font-size: 8px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--dark-fg-dim); margin-bottom: 8px; }
+  .transfer-value { font-size: 20px; font-weight: 600; color: var(--dark-fg); letter-spacing: -1px; }
+  .transfer-value.green { color: var(--green); }
+  .transfer-unit { font-size: 9px; font-weight: 300; color: var(--dark-fg-dim); margin-top: 4px; }
+
+  .footer { padding: 24px 32px; border-top: 1px solid var(--dark-border); display: flex; justify-content: space-between; }
+  .footer-text { font-size: 9px; font-weight: 300; color: var(--dark-fg-dim); letter-spacing: 1.5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="sys-header">
+    <div class="sys-title">System Infrastructure</div>
+    <div class="sys-status">
+      <div class="sys-stat">SERVICES: <span>6</span></div>
+      <div class="sys-stat">STATUS: <span class="live">&#x25CF; ALL OPERATIONAL</span></div>
+      <div class="sys-stat">UPTIME: <span>99.7%</span></div>
+    </div>
+  </div>
+
+  <canvas id="mainCanvas"></canvas>
+
+  <div class="services">
+
+    <div class="service">
+      <canvas class="service-canvas" data-viz="db"></canvas>
+      <div class="service-content">
+        <div class="service-header">
+          <div class="service-name">Database</div>
+          <div class="service-dot"></div>
+        </div>
+        <div class="service-mark"><svg viewBox="0 0 48 48" fill="none"><ellipse cx="24" cy="14" rx="14" ry="5" stroke="#E8E3D8" stroke-width="1.5" fill="none"/><line x1="10" y1="14" x2="10" y2="34" stroke="#E8E3D8" stroke-width="1.5"/><line x1="38" y1="14" x2="38" y2="34" stroke="#E8E3D8" stroke-width="1.5"/><ellipse cx="24" cy="24" rx="14" ry="5" stroke="#E8E3D8" stroke-width="1" fill="none" stroke-opacity="0.3"/><ellipse cx="24" cy="34" rx="14" ry="5" stroke="#E8E3D8" stroke-width="1.5" fill="none"/></svg></div>
+        <div class="service-desc">Supabase operational database. 5+ tables holding all pipeline state — topics, ideas, drafts, agent logs, and repurposed content. Every agent reads and writes here. Free tier is enough.</div>
+        <div class="service-specs">
+          <div class="spec-row"><span class="spec-label">Tables</span><span class="spec-value">5+</span></div>
+          <div class="spec-row"><span class="spec-label">Rows/Week</span><span class="spec-value">~50</span></div>
+          <div class="spec-row"><span class="spec-label">Connections</span><span class="spec-value green">All agents</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service">
+      <canvas class="service-canvas" data-viz="repo"></canvas>
+      <div class="service-content">
+        <div class="service-header">
+          <div class="service-name">Repository</div>
+          <div class="service-dot"></div>
+        </div>
+        <div class="service-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="8" r="3" stroke="#E8E3D8" stroke-width="1.5" fill="none"/><circle cx="14" cy="40" r="3" stroke="#E8E3D8" stroke-width="1.5" fill="none"/><circle cx="34" cy="40" r="3" stroke="#E8E3D8" stroke-width="1.5" fill="none"/><line x1="24" y1="11" x2="24" y2="26" stroke="#E8E3D8" stroke-width="1.5"/><line x1="24" y1="26" x2="14" y2="37" stroke="#E8E3D8" stroke-width="1.5"/><line x1="24" y1="26" x2="34" y2="37" stroke="#E8E3D8" stroke-width="1.5"/><circle cx="24" cy="26" r="2" fill="#E8E3D8"/></svg></div>
+        <div class="service-desc">GitHub repository. Agent SKILL.md files, config, rules, run scripts, templates, and shared knowledge. VPS syncs outputs via snapshot cron every 4 days.</div>
+        <div class="service-specs">
+          <div class="spec-row"><span class="spec-label">Sync</span><span class="spec-value">Every 4 days</span></div>
+          <div class="spec-row"><span class="spec-label">Files</span><span class="spec-value">~70</span></div>
+          <div class="spec-row"><span class="spec-label">Access</span><span class="spec-value green">Open Source</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service">
+      <canvas class="service-canvas" data-viz="server"></canvas>
+      <div class="service-content">
+        <div class="service-header">
+          <div class="service-name">Cloud Server</div>
+          <div class="service-dot"></div>
+        </div>
+        <div class="service-mark"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" stroke="#E8E3D8" stroke-width="1" fill="none"/><circle cx="16" cy="16" r="2" fill="#E8E3D8"/><circle cx="24" cy="16" r="2" fill="#E8E3D8"/><circle cx="32" cy="16" r="2" fill="#E8E3D8"/><circle cx="16" cy="24" r="2" fill="#E8E3D8"/><circle cx="24" cy="24" r="2" fill="#E8E3D8"/><circle cx="32" cy="24" r="2" fill="#E8E3D8"/><circle cx="16" cy="32" r="2" fill="#E8E3D8"/><circle cx="24" cy="32" r="2" fill="#E8E3D8"/><circle cx="32" cy="32" r="2" fill="#E8E3D8"/></svg></div>
+        <div class="service-desc">Ubuntu VPS running all agents, bot process, and cron scheduler. Agents execute as dedicated non-root user (brandcrew). Outputs and generated images stored on filesystem.</div>
+        <div class="service-specs">
+          <div class="spec-row"><span class="spec-label">OS</span><span class="spec-value">Ubuntu 24</span></div>
+          <div class="spec-row"><span class="spec-label">Processes</span><span class="spec-value">Bot + 6 cron</span></div>
+          <div class="spec-row"><span class="spec-label">Cost</span><span class="spec-value green">~$5/mo</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service">
+      <canvas class="service-canvas" data-viz="msg"></canvas>
+      <div class="service-content">
+        <div class="service-header">
+          <div class="service-name">Messaging</div>
+          <div class="service-dot"></div>
+        </div>
+        <div class="service-mark"><svg viewBox="0 0 48 48" fill="none"><polygon points="8,10 40,24 8,38 14,24" stroke="#E8E3D8" stroke-width="1.5" fill="none"/><circle cx="14" cy="24" r="2" fill="#E8E3D8"/></svg></div>
+        <div class="service-desc">Telegram bot — the human interface. Operators receive ideas, draft text, images, and system notifications. 12 commands control the pipeline. Whitelist-secured polling.</div>
+        <div class="service-specs">
+          <div class="spec-row"><span class="spec-label">Commands</span><span class="spec-value">12</span></div>
+          <div class="spec-row"><span class="spec-label">Security</span><span class="spec-value green">Whitelist</span></div>
+          <div class="spec-row"><span class="spec-label">Mode</span><span class="spec-value">Polling</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service">
+      <canvas class="service-canvas" data-viz="cron"></canvas>
+      <div class="service-content">
+        <div class="service-header">
+          <div class="service-name">Scheduler</div>
+          <div class="service-dot"></div>
+        </div>
+        <div class="service-mark"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="16" stroke="#E8E3D8" stroke-width="1.5" fill="none"/><line x1="24" y1="24" x2="24" y2="12" stroke="#E8E3D8" stroke-width="1.5"/><line x1="24" y1="24" x2="32" y2="28" stroke="#E8E3D8" stroke-width="1.5"/><circle cx="24" cy="24" r="2" fill="#E8E3D8"/></svg></div>
+        <div class="service-desc">6 cron jobs orchestrating the weekly pipeline. No central orchestrator — each agent is independently triggered on schedule. Lock files prevent overlapping runs.</div>
+        <div class="service-specs">
+          <div class="spec-row"><span class="spec-label">Jobs</span><span class="spec-value">6 active</span></div>
+          <div class="spec-row"><span class="spec-label">Cycle</span><span class="spec-value">Weekly</span></div>
+          <div class="spec-row"><span class="spec-label">Protection</span><span class="spec-value green">Lock files</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="service">
+      <canvas class="service-canvas" data-viz="api"></canvas>
+      <div class="service-content">
+        <div class="service-header">
+          <div class="service-name">Template Engine</div>
+          <div class="service-dot"></div>
+        </div>
+        <div class="service-mark"><svg viewBox="0 0 48 48" fill="none"><rect x="8" y="8" width="32" height="32" stroke="#E8E3D8" stroke-width="1.5" fill="none"/><rect x="14" y="14" width="20" height="20" stroke="#E8E3D8" stroke-width="1" fill="none" stroke-dasharray="2 3"/><circle cx="24" cy="24" r="4" fill="#E8E3D8"/></svg></div>
+        <div class="service-desc">HTML/CSS templates rendered to JPG via Playwright headless browser. 6 template types with theme files for branding. 1080&#xd7;1350 output at quality 90. Zero external API cost for images.</div>
+        <div class="service-specs">
+          <div class="spec-row"><span class="spec-label">Templates</span><span class="spec-value">6 types</span></div>
+          <div class="spec-row"><span class="spec-label">Output</span><span class="spec-value">1080&#xd7;1350 JPG</span></div>
+          <div class="spec-row"><span class="spec-label">Cost</span><span class="spec-value green">$0/mo</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="transfer-section">
+    <div class="transfer-cell">
+      <div class="transfer-label">Agents</div>
+      <div class="transfer-value">7</div>
+      <div class="transfer-unit">full-time</div>
+    </div>
+    <div class="transfer-cell">
+      <div class="transfer-label">Cron Jobs</div>
+      <div class="transfer-value green">6</div>
+      <div class="transfer-unit">active</div>
+    </div>
+    <div class="transfer-cell">
+      <div class="transfer-label">DB Writes</div>
+      <div class="transfer-value">~40</div>
+      <div class="transfer-unit">per week</div>
+    </div>
+    <div class="transfer-cell">
+      <div class="transfer-label">Templates</div>
+      <div class="transfer-value">6</div>
+      <div class="transfer-unit">types</div>
+    </div>
+    <div class="transfer-cell">
+      <div class="transfer-label">Image Cost</div>
+      <div class="transfer-value green">$0</div>
+      <div class="transfer-unit">per month</div>
+    </div>
+    <div class="transfer-cell">
+      <div class="transfer-label">Total Cost</div>
+      <div class="transfer-value green">~$20</div>
+      <div class="transfer-unit">per month</div>
+    </div>
+  </div>
+
+  <div class="conn-section">
+    <div class="conn-title">Service Connections &#x2014; Live Data Flow</div>
+    <canvas id="connCanvas"></canvas>
+  </div>
+
+  <div class="footer">
+    <span class="footer-text">BrandCrew / Stack V.02</span>
+    <span class="footer-text">6 Services / All Operational</span>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const c = document.getElementById('mainCanvas');
+  const ctx = c.getContext('2d');
+  function resize() { c.width = c.parentElement.clientWidth; c.height = 200; }
+  resize(); window.addEventListener('resize', resize);
+  let t = 0;
+  function draw() {
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h);
+    for (let strand = 0; strand < 2; strand++) {
+      ctx.beginPath();
+      for (let x = 0; x < w; x += 2) {
+        const nx = x / w;
+        const wave = Math.sin(nx * 8 + t * 0.8 + strand * Math.PI) * 30;
+        const y = h/2 + wave;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = strand === 0 ? 'rgba(92,191,58,0.3)' : 'rgba(232,227,216,0.15)';
+      ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    for (let i = 0; i < 40; i++) {
+      const nx = i / 40; const x = nx * w;
+      const y1 = h/2 + Math.sin(nx * 8 + t * 0.8) * 30;
+      const y2 = h/2 + Math.sin(nx * 8 + t * 0.8 + Math.PI) * 30;
+      ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2);
+      ctx.strokeStyle = `rgba(92,191,58,${0.05 + Math.sin(t + i) * 0.03})`; ctx.lineWidth = 0.5; ctx.stroke();
+    }
+    for (let i = 0; i < 20; i++) {
+      const progress = ((t * 0.02 * (0.5 + i * 0.1) + i * 0.15) % 1);
+      const x = progress * w; const strand = i % 2;
+      const y = h/2 + Math.sin(progress * 8 + t * 0.8 + strand * Math.PI) * 30;
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(92,191,58,${Math.sin(progress * Math.PI) * 0.6})`; ctx.fill();
+    }
+    t += 0.03; requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+document.querySelectorAll('.service-canvas').forEach(canvas => {
+  const ctx = canvas.getContext('2d');
+  const viz = canvas.dataset.viz;
+  function resize() { canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight; }
+  resize(); window.addEventListener('resize', resize);
+  let t = 0;
+  const particles = [];
+  for (let i = 0; i < 30; i++) { particles.push({ x: Math.random(), y: Math.random(), vx: (Math.random()-0.5)*0.0003, vy: (Math.random()-0.5)*0.0003, size: Math.random()*1+0.3, phase: Math.random()*Math.PI*2 }); }
+  function draw() {
+    const w = canvas.width, h = canvas.height; ctx.clearRect(0,0,w,h);
+    if (viz === 'db') {
+      for (let i = 0; i < 8; i++) { const y = 40 + i * 30; const scanX = ((t * 40 + i * 50) % (w + 100)) - 50; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.strokeStyle = 'rgba(92,191,58,0.03)'; ctx.stroke(); const grad = ctx.createLinearGradient(scanX-30, 0, scanX+30, 0); grad.addColorStop(0, 'rgba(92,191,58,0)'); grad.addColorStop(0.5, 'rgba(92,191,58,0.15)'); grad.addColorStop(1, 'rgba(92,191,58,0)'); ctx.beginPath(); ctx.moveTo(scanX-30, y); ctx.lineTo(scanX+30, y); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke(); ctx.lineWidth = 1; }
+    } else if (viz === 'repo') {
+      for (let i = 0; i < 5; i++) { const startY = 20 + i * 50; ctx.beginPath(); ctx.moveTo(10, startY); for (let x = 10; x < w-10; x += 20) { const branch = Math.sin(x*0.02 + t + i) > 0.7 ? 15 : 0; ctx.lineTo(x, startY + branch); } ctx.strokeStyle = `rgba(232,227,216,${0.03 + Math.sin(t+i)*0.01})`; ctx.stroke(); }
+    } else if (viz === 'server') {
+      for (let i = 0; i < 15; i++) { const x = 20 + i * ((w-40)/15); const y = ((t * 30 + i * 40) % h); for (let j = 0; j < 4; j++) { const ty = y - j * 12; if (ty > 0 && ty < h) { ctx.beginPath(); ctx.arc(x, ty, 1, 0, Math.PI*2); ctx.fillStyle = `rgba(92,191,58,${0.12 - j*0.03})`; ctx.fill(); } } }
+    } else if (viz === 'msg') {
+      for (let i = 0; i < 3; i++) { const progress = ((t * 0.3 + i * 1.2) % 3) / 3; const r = progress * Math.min(w,h) * 0.4; ctx.beginPath(); ctx.arc(w*0.3, h*0.5, r, 0, Math.PI*2); ctx.strokeStyle = `rgba(92,191,58,${(1 - progress) * 0.1})`; ctx.stroke(); }
+    } else if (viz === 'cron') {
+      const cx = w*0.7, cy = h*0.4, r = 40;
+      for (let i = 0; i < 12; i++) { const angle = (i/12) * Math.PI * 2 - Math.PI/2; const active = Math.floor(((t*0.5) % 12)) === i; const x1 = cx + Math.cos(angle) * (r-5); const y1 = cy + Math.sin(angle) * (r-5); const x2 = cx + Math.cos(angle) * r; const y2 = cy + Math.sin(angle) * r; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.strokeStyle = active ? 'rgba(92,191,58,0.4)' : 'rgba(232,227,216,0.05)'; ctx.lineWidth = active ? 2 : 1; ctx.stroke(); }
+      ctx.lineWidth = 1;
+    } else if (viz === 'api') {
+      const cx = w*0.5, cy = h*0.4;
+      for (let i = 0; i < 8; i++) { const angle = (i/8)*Math.PI*2 + t*0.2; const len = 20 + Math.sin(t*2+i)*10; ctx.beginPath(); ctx.moveTo(cx + Math.cos(angle)*15, cy + Math.sin(angle)*15); ctx.lineTo(cx + Math.cos(angle)*len, cy + Math.sin(angle)*len); ctx.strokeStyle = `rgba(92,191,58,${0.06 + Math.sin(t+i)*0.03})`; ctx.stroke(); }
+    }
+    for (const p of particles) { p.x += p.vx; p.y += p.vy; if(p.x<0)p.x=1; if(p.x>1)p.x=0; if(p.y<0)p.y=1; if(p.y>1)p.y=0; ctx.beginPath(); ctx.arc(p.x*w, p.y*h, p.size, 0, Math.PI*2); ctx.fillStyle = 'rgba(232,227,216,0.02)'; ctx.fill(); }
+    t += 0.02; requestAnimationFrame(draw);
+  }
+  draw();
+});
+
+(function() {
+  const c = document.getElementById('connCanvas');
+  const ctx = c.getContext('2d');
+  function resize() { c.width = c.parentElement.clientWidth; c.height = 300; }
+  resize(); window.addEventListener('resize', resize);
+  const services = [
+    { name: 'DATABASE', x: 0.1, y: 0.3 },
+    { name: 'REPOSITORY', x: 0.3, y: 0.7 },
+    { name: 'SERVER', x: 0.5, y: 0.3 },
+    { name: 'MESSAGING', x: 0.7, y: 0.7 },
+    { name: 'SCHEDULER', x: 0.5, y: 0.7 },
+    { name: 'TEMPLATES', x: 0.9, y: 0.3 },
+  ];
+  const conns = [ [2, 0], [2, 1], [2, 4], [4, 0], [3, 2], [2, 5], [3, 0] ];
+  let t = 0;
+  function draw() {
+    const w = c.width, h = c.height; ctx.clearRect(0,0,w,h);
+    conns.forEach(([a,b]) => {
+      const sa = services[a], sb = services[b];
+      ctx.beginPath(); ctx.moveTo(sa.x*w, sa.y*h);
+      ctx.quadraticCurveTo((sa.x+sb.x)/2*w, (sa.y+sb.y)/2*h - 20, sb.x*w, sb.y*h);
+      ctx.strokeStyle = 'rgba(92,191,58,0.08)'; ctx.lineWidth = 1; ctx.stroke();
+      for (let i = 0; i < 3; i++) {
+        const progress = ((t * 0.015 * (1+i*0.3) + a*0.2 + i*0.3) % 1);
+        const px = sa.x + (sb.x - sa.x) * progress;
+        const py = sa.y + (sb.y - sa.y) * progress - Math.sin(progress * Math.PI) * 0.07;
+        ctx.beginPath(); ctx.arc(px*w, py*h, 2, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(92,191,58,${Math.sin(progress * Math.PI) * 0.5})`; ctx.fill();
+      }
+    });
+    services.forEach((s, i) => {
+      const grad = ctx.createRadialGradient(s.x*w, s.y*h, 0, s.x*w, s.y*h, 30);
+      grad.addColorStop(0, 'rgba(92,191,58,0.08)'); grad.addColorStop(1, 'rgba(92,191,58,0)');
+      ctx.beginPath(); ctx.arc(s.x*w, s.y*h, 30, 0, Math.PI*2); ctx.fillStyle = grad; ctx.fill();
+      ctx.beginPath(); ctx.arc(s.x*w, s.y*h, 5, 0, Math.PI*2); ctx.fillStyle = '#5CBF3A'; ctx.fill();
+      ctx.beginPath(); ctx.arc(s.x*w, s.y*h, 10 + Math.sin(t + i) * 2, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(92,191,58,0.15)'; ctx.stroke();
+      ctx.font = '8px IBM Plex Mono'; ctx.fillStyle = 'rgba(232,227,216,0.4)'; ctx.textAlign = 'center';
+      ctx.fillText(s.name, s.x*w, s.y*h + 24);
+    });
+    t += 0.03; requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+</body>
+</html>
